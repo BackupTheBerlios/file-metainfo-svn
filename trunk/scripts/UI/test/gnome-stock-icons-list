@@ -1,0 +1,9 @@
+#!/usr/bin/perl
+
+use strict;
+use Gtk2;
+use Data::Dumper;
+
+my $list = Gtk2::Stock->list_ids;
+print Dumper ($list);
+

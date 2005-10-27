@@ -1,0 +1,185 @@
+#!/usr/bin/perl -I /home/developement/FileInfo/lib
+#
+package main;
+use strict;
+use Gtk2 -init;
+use Gtk2::GladeXML;
+use Gtk2::SimpleList;
+use Gnome2;
+use Data::Dumper;
+use Getopt::Long;
+use FileInfo;
+use FileInfo::DB;
+
+my $debug;
+my $uifilepath="/home/developement/FileInfo/scripts/UI/GFileInfo";
+my $uifile="gfileinfoaddlabel.glade";
+my $myname="GFileInfoAddLabel";
+my $version="0.1";
+
+sub dmsg{ return "*** DEBUG [$myname]: @_" };
+
+################################
+# Options parsing and settings #
+################################
+
+GetOptions(
+	"debug" => \$debug
+);
+
+#########################################
+# Glade UI loading and application init #
+#########################################
+
+Gnome2::Program->init ($myname, $version);
+my $screen=Gtk2::Gdk::Screen->get_default;
+my $app = Gnome2::App->new ("$myname/Simple");
+my $gladexml = Gtk2::GladeXML->new("$uifilepath/$uifile");
+$gladexml->signal_autoconnect_from_package('main');
+my $window=$gladexml->get_widget('selectlabelwin');
+my $labelcomboentry= $gladexml->get_widget('labelcomboentry');
+my $ratescale= $gladexml->get_widget('ratescale');
+my $labelslabel=$gladexml->get_widget('labelslabel');
+my $moreinfoexpander=$gladexml->get_widget('moreinfoexpander');
+my $expanded=0;
+my $keywordslist=$gladexml->get_widget('keywordslist');
+
+my $labelentry=$labelcomboentry->get_child();
+
+my $liststore=Gtk2::SimpleList->new_from_treeview (
+		$keywordslist,
+                'Keyword'    => 'markup',
+                'Value'    => 'text',
+);
+
+my $fn=shift;
+if (defined($ENV{NAUTILUS_SCRIPT_SELECTED_FILE_PATHS})){
+	$fn=$ENV{NAUTILUS_SCRIPT_SELECTED_FILE_PATHS};
+	chomp $fn;
+}
+
+die "You must specify a filename" unless $fn;
+my $fdb=new FileInfo::DB( debug => $debug ) || die "Could not open db";
+my $fi=new FileInfo(
+                $fn,
+		fileInfoDB=>$fdb,
+                debug=>$debug
+        );
+
+die "Error creating FileInfo object for \'$fn\'" unless $fi;
+
+my $aref=$fdb->list_all_values_for_keyword($FileInfo::UserLabel);
+
+foreach my $lab (@$aref){
+	warn dmsg $$lab[0] if $debug;
+	$labelcomboentry->append_text($$lab[0]);
+}
+
+if (defined(@{$fi->{keywords}->{$FileInfo::UserLabel}})){
+	my $labels=join(',',@{$fi->{keywords}->{$FileInfo::UserLabel}});
+	warn dmsg "Labels: $labels" if $debug;
+	$labelslabel->set_markup("<i>$labels</i>");
+}
+
+my $rate=${$fi->{keywords}->{$FileInfo::UserRate}}[0];
+warn dmsg "Current rate= $rate" if $debug;
+if (defined($rate)){
+	$ratescale->set_value($rate);
+}
+
+my @mysize=$window->get_size();
+warn dmsg "mysize=@mysize" if $debug;
+
+Gtk2->main; # Main loop
+warn dmsg "Finished" if $debug;
+1;
+
+######################
+# Internal functions #
+######################
+
+sub process_label{
+	my $label=lc $labelentry->get_text();
+	
+	my $rate=$ratescale->get_value;
+	if (defined($label) && $label !~ /^$/){
+		warn dmsg "Label: " . $label if $debug;
+		my $ret=$fi->add_keyword($FileInfo::UserLabel,$label);
+		warn dmsg "Label addedd with ret ($ret)" if $debug;
+	}
+	warn dmsg "Rating: " . $rate if $debug;
+	my $ret=$fi->replace_keyword($FileInfo::UserRate,$rate);
+	warn dmsg "Rating addedd with ret ($ret)" if $debug;
+}
+
+#############
+# Callbacks #
+#############
+
+sub on_quit1_activate{
+	print "SIGNAL: on_quit1_activate\n";
+	Gtk2->main_quit;
+}
+
+
+sub on_window_destroy
+{
+        Gtk2->main_quit;
+	1;
+}
+
+sub gtk_main_quit
+{
+        Gtk2->main_quit;
+	1;
+}
+
+sub on_cancelbutton_clicked{
+        Gtk2->main_quit;
+	1;
+}
+
+sub on_labelentry_editing_done{
+	warn dmsg " on_labelentry_editing_done - Enter" if $debug;
+	process_label(@_);
+	warn dmsg " on_labelentry_editing_done - Exit" if $debug;
+        Gtk2->main_quit;
+	1;
+}
+
+
+sub on_applybutton_clicked{
+	warn dmsg "on_applybutton_clicked - Enter" if $debug;
+	process_label(@_);
+	warn dmsg "on_applybutton_clicked - Exit" if $debug;
+        Gtk2->main_quit;
+	1;
+}
+
+sub on_moreinfoexpander_activate{
+	warn dmsg "on_moreinfoexpander_activate - Enter" if $debug;
+	if (!$expanded){
+		$expanded=1;
+		$window->set_size_request($mysize[0],$mysize[1]+100);
+		$window->resize($mysize[0],$mysize[1]+100);
+		foreach (keys %{$fi->{keywords}}){
+			my (undef,$kw)=split(/\./);
+			warn dmsg "keyword=$kw value=" . join(' ',@{$fi->{keywords}->{$_}}) if $debug;
+			foreach my $val (@{$fi->{keywords}->{$_}}){
+				push @{$liststore->{data}},( [ "<b>$kw</b>", $val ],);
+			}
+		}
+	}
+	else {
+		$expanded=0; #No refresh
+		warn dmsg "mysize=@mysize" if $debug;
+		$window->set_size_request($mysize[0],$mysize[1]);
+		$window->resize(@mysize);
+	}
+
+	warn dmsg "on_moreinfoexpander_activate - Exit" if $debug;
+}
+
+##################
+
+

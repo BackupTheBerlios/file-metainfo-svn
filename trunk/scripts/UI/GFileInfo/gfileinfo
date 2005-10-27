@@ -1,0 +1,76 @@
+#!/usr/bin/perl -I /home/developement/FileInfo/lib
+#
+package main;
+use strict;
+use Gtk2 -init;
+use Gtk2::GladeXML;
+use Gtk2::SimpleList;
+use Gnome2;
+use Data::Dumper;
+use Getopt::Long;
+use FileInfo;
+
+my $debug;
+my $ui="gfileinfo.glade";
+
+GetOptions(
+	"debug" => \$debug
+);
+
+my $filename=shift;
+
+if (!defined($filename)){
+        warn "Usage: $0 [-d] filename\n";
+        die "Missing filename\n";
+}
+
+Gnome2::Program->init ("GFileInfo", "0.1");
+my $screen=Gtk2::Gdk::Screen->get_default;
+my $app = Gnome2::App->new ("GFileInfo/Simple");
+my $gladexml = Gtk2::GladeXML->new($ui);
+$gladexml->signal_autoconnect_from_package('main');
+
+my $window=$gladexml->get_widget('fileinfo-pad');
+
+my $slist=Gtk2::SimpleList->new_from_treeview(
+	$gladexml->get_widget('properties'),
+	"Uno" => 'text',
+	"Due" => 'text'
+);
+
+warn Dumper($slist) if $debug;
+
+my $fi=new FileInfo(
+                $filename,
+                debug=>0
+);
+
+my $ar=$fi->get_values();
+
+print Dumper($ar) if $debug;
+
+foreach my $k (@$ar){
+	warn "$k->[0] $k->[1]\n" if $debug;
+	push @{$slist->{data}}, [ $k->[0], $k->[1] ];
+}
+
+Gtk2->main;
+warn "I'm here\n" if $debug;
+1;
+
+sub on_quit1_activate{
+	print "SIGNAL: on_quit1_activate\n";
+	Gtk2->main_quit;
+}
+
+
+sub on_queryentry_changed{
+	print "SIGNAL: on_queryentry_changed\n";
+}
+
+sub gtk_main_quit
+{
+	print "SIGNAL: gtk_main_quit\n";
+        Gtk2->main_quit;
+}
+

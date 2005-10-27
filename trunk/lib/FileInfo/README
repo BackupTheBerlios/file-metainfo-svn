@@ -1,0 +1,7 @@
+
+Plugins and Modules
+===================
+
+Plugins are executed when the DB is updated. They extract informations that are put into the DB and so suitable for searches.
+
+Modules are executed when the FileInfo is updated. They extract informations that change often and that are not usefull for searches such as size, desktop file icon, etc etc

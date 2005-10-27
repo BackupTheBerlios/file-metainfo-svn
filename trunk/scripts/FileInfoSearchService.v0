@@ -1,0 +1,170 @@
+#!/usr/bin/perl
+#
+# TODO
+#  * remove the http server and change it with a input pipe
+#  * Change the http server with a domain socket server to receive requests (?)
+#  * Change the named pipe witha a domain socket to send responses (?)
+
+use strict;
+use FileInfo;
+use FileInfo::DB;
+use Data::Dumper;
+use Getopt::Long;
+use HTTP::Daemon;
+use HTTP::Status;
+use Carp;
+use Fcntl;
+use POSIX ":sys_wait_h";
+use POSIX qw(strftime);
+
+my $PROGNAME="FileInfoSearchService";
+my $waitedpid = 0;
+
+my $port=9000;
+my $debug;
+my $m;
+my $pipe=$ENV{HOME} . "/.FileInfo/FileInfoSearchServicePipe";
+my $pipein=$END{HOME} . "/.FileInfo/FileInfoSearchServiceRequest";
+my $pipemode;
+
+GetOptions(
+	"port=n" => \$port,
+	"debug" => \$debug,
+	measure => \$m,
+	pipemode => \$pipemode
+);
+
+sub logmsg { 
+  if (@_){
+    warn "[$0 $$: @_ at ", (strftime "%Y%m%d%H%M%S", localtime), "]\n" ;
+  }
+}
+
+sub spawn;
+
+sub REAPER {
+  my $child;
+  while (($waitedpid = waitpid(-1,WNOHANG)) > 0){
+     logmsg "reaped $waitedpid" . ($? ? " with exit $?" : '');
+  }
+  $SIG{CHLD} = \&REAPER;
+}
+
+$SIG{CHLD} = \&REAPER;
+
+my $value;
+
+my $fdb=new FileInfo::DB( debug => $debug) || die "Could not open DB\n";
+my $d= new HTTP::Daemon(
+	LocalPort => $port
+)|| die "Cannot create HTTP Daemon: $@\n";
+print "Please contact me at: <URL:", $d->url, "glocate?[QUERY]>\n";
+
+if ($pipemode){
+	unless (-p $pipe) {
+		unlink $pipe;
+		require POSIX;
+		POSIX::mkfifo($pipe, 0666) or die "can't mknod $pipe: $!";
+       		warn "DEBUG: created $pipe as a named pipe\n" if $debug;
+
+	}
+	print "Operating in PIPEMODE, read responses from $pipe\n";
+}
+my $c;
+for ($waitedpid=0; ($c = ($d->accept)) || $waitedpid; $waitedpid =0 ) {
+	next if $waitedpid and not $c;
+	while (my $r = $c->get_request) {
+		if ($r->method eq 'GET' and $r->url->path eq '/glocate'){
+			spawn sub{
+				$|=1;
+				logmsg "Processing request: " . Dumper($r) if $debug;
+				my $html;
+				open(HTML,'>',\$html);
+				logmsg "Processing request for url: " . $r->url . "\n";
+				$value = $r->url->query;
+				logmsg "DEBUG: value=$value\n" if $debug;
+				if (!defined($value)){
+					print HTML "undef";
+				}
+				else {
+					if ($pipemode){
+						logmsg "PIPEMODE: Creating HTTP response ";
+						my $response=HTTP::Response->new(
+								200,undef,undef,"OK: Accepted - sending responde to {$pipe}\n"
+							)|| die "Error: Cannot create response $!";
+						logmsg "PIPEMODE: Sending response ";
+						$c->send_response($response) || die "ERROR: Cannot send response $!\n";
+
+					}
+					my $t0=Time::HiRes::time if ($m);
+					my $arrayref=$fdb->search($value);
+					my $tf=Time::HiRes::time if ($m);
+					logmsg "DEBUG: Result " . Dumper($arrayref) if $debug;
+					logmsg "TIMES: search elapsed in " . ($tf - $t0) . " seconds\n" if ($m);
+					logmsg "Generating response";
+					my $i=0;
+					foreach (@$arrayref){
+						logmsg "DEBUG: $$_[0]\n" if $debug;
+						my $fi=new FileInfo(
+		 					$$_[0],
+	 	 					fileInfoDB => $fdb) || die "Could not instantiate FileInfo: $@\n";
+						logmsg "Obtaining FileInfo for " . $fi->{url} . "\n";
+						my $name="fi[" . $i . "]";
+						print HTML Data::Dumper->Dump([$fi],[$name]);
+						undef($fi);
+						$i++;
+					}
+		    			logmsg "Finished response generation ";
+				}
+				close (HTML);
+				if ($pipemode){
+					open (PIPE,"> $pipe")|| die "Can't write to $pipe: $!";
+					logmsg "PIPEMODE: Sending response to pipe";
+					print PIPE $html;
+					logmsg "PIPEMODE: done";
+				} else {
+					logmsg "HTTPMODE: Creating response ";
+					my $response=HTTP::Response->new(
+							200,undef,undef,$html
+						)|| die "Error: Cannot create response $!";
+					logmsg "HTTPMODE: Sending response ";
+					$c->send_response($response) || die "Error: Cannot send response $!\n";
+				}
+			}
+		}
+		else {
+			spawn sub{
+                     		$c->send_error(RC_FORBIDDEN);
+			}
+                }
+	}
+	$c->close();
+	undef($c);
+	logmsg "Request processed\n";
+}
+$fdb->close();
+if ($pipemode){
+	close PIPE
+}
+
+sub spawn{
+  my $coderef = shift;
+  unless (@_ == 0 && $coderef && ref($coderef) eq 'CODE') {
+    confess "usage: spawn CODEREF";
+  }
+
+  my $pid;
+  if (!defined($pid = fork)) {
+    logmsg "cannot fork: $!";
+    return;
+  } elsif ($pid) {
+    logmsg "begat $pid ";
+    return; # I'm the parent
+  }
+  # else I'm the child -- go spawn
+
+  #open(STDIN,  "<&Client")   || die "can't dup client to stdin";
+  #open(STDOUT, ">&Client")   || die "can't dup client to stdout";
+  ## open(STDERR, ">&STDOUT") || die "can't dup stdout to stderr";
+  exit &$coderef();
+}

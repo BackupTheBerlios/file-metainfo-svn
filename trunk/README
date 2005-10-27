@@ -1,0 +1,7 @@
+A simple keyword indexing and searching system for files.
+
+
+1. Index the files
+1.1 Import a directory tree: the files are marked to be processed by the plugins
+1.2 process the enqueued file: the plugins are run on the queued files to extract the informations
+

@@ -1,0 +1,75 @@
+#!/usr/bin/perl -I /home/developement/glocate
+#
+
+use strict;
+use FileInfo;
+use FileInfo::DB;
+use Data::Dumper;
+use Getopt::Long;
+
+my $keywords;
+my $byn=1;
+my ($s,$m);
+my $ret_name;
+my $debug;
+my $brief=0;
+my $long=1;
+my $gnome;
+my @nokeys;
+
+GetOptions(
+	keywords => \$keywords,
+	name => \$byn,
+	filename => \$ret_name,
+	measure => \$m,
+	debug => \$debug,
+	"nokeywords=s" => \@nokeys,
+	brief => \$brief,
+	longlist => \$long,
+	'gnome-vfs' => \$gnome
+
+);
+
+my $value=shift;
+
+die "You must specify a query.\n" unless $value;
+my $fdb=new FileInfo::DB( debug => $debug) || die "Could not open DB\n";
+
+my $t0=Time::HiRes::time if ($m);
+
+my $arrayref=$fdb->search($value);
+
+my $tf=Time::HiRes::time if ($m);
+warn "TIMES: search() elapsed in " . ($tf - $t0) . " seconds\n" if ($m);
+print Dumper($arrayref) if $debug;
+$t0=Time::HiRes::time if ($m);
+foreach (@$arrayref){
+	print "DEBUG: $$_[0]\n" if $debug;
+	#my $tn0=Time::HiRes::time if ($m);
+	my $fi=new FileInfo(
+		 $$_[0],
+	 	 fileInfoDB => $fdb,
+	 	 debug => $debug
+	) || die "Could not instantiate FileInfo: $@\n";
+	#my $tnf=Time::HiRes::time if ($m);
+	#warn "TIMES: FileInfo::new() elapsed in " . ($tnf - $tn0) . " seconds\n" if ($m);
+	if ($brief){
+		print $fi->{fullpath} . "\n";
+	}
+	else{
+	 	$fi->print_info(": ");
+	 	print "Keywords:\n\t";
+	 	$fi->print_values(":\t","\n\t",",");
+		if ($gnome){
+			print "VFS Info:\n";
+			$fi->print_gnome2_info();
+		}
+	 	print "\n";
+
+	}
+	#$fi->close();
+}
+
+$tf=Time::HiRes::time if ($m);
+warn "TIMES: total rendering time: " . ($tf - $t0) . " seconds\n" if ($m);
+$fdb->close();

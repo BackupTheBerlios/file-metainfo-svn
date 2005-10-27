@@ -1,0 +1,55 @@
+#!/usr/bin/perl
+#
+
+use strict;
+use LWP::UserAgent;
+use HTTP::Status;
+use HTTP::Request;
+use Getopt::Long;
+use Carp;
+use Data::Dumper;
+
+my $PROGNAME="FileInfoSearchClient";
+my $waitedpid = 0;
+
+my $port=9000;
+my $debug;
+my $m;
+
+GetOptions(
+	"port=n" => \$port,
+	"debug" => \$debug,
+	measure => \$m
+);
+
+
+my @keywords=@ARGV;
+my $url="http://localhost:$port/glocate";
+
+my $ua = LWP::UserAgent->new,
+my @fi;
+
+print "Sending query to $url for @keywords\n";
+
+my $query= HTTP::Request->new(
+	GET => "$url?@keywords"
+);
+
+my $res;
+$res=$ua->request($query);
+
+if ($res->is_success){
+	my $content=$res->content;
+	warn "*** DEBUG: $content ***" if $debug;
+	{
+		local $Data::Dumper::Purity = 1;
+		eval $content
+	}
+
+} else {
+	die "Error getting mailbox info: " .  $res->status_line . "\n";
+}
+
+foreach my $f (@fi){
+	print "$f->{url}\n";
+}
