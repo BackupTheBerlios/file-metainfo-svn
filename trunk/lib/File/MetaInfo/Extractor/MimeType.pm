@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 use strict;
 
-package FileInfo::Plugins::MimeType;
-use base qw(FileInfo::Plugins);
+package File::MetaInfo::Extract::MimeType;
+use base qw(File::MetaInfo::Extract);
 
 use Digest::MD5;
 use Data::Dumper;
@@ -52,7 +52,7 @@ sub extract{
 
 sub test{
 	my $filename=shift;
-	my $mimetest=new FileInfo::Plugins::MimeType($filename);
+	my $mimetest=new File::MetaInfo::Extract::MimeType($filename);
 	my $h=$mimetest->extract();
 	print Dumper($h);
 }

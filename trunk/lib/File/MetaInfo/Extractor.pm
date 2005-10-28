@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 
-package FileInfo::Plugins;
+package File::MetaInfo::Extractor;
 
 =head1 NAME
 
-FileInfo::Plugins - Generic Plugins class for FileInfo. Used only to document which methods 
+File::MetaInfo::Extractor - Generic Extractor class for FileInfo. Used only to document which methods 
 a plugin must have andwhat is expected to return
 
 =head1 SYNOPSIS
@@ -17,7 +17,7 @@ a plugin must have andwhat is expected to return
 
 =item C<new>
 
-   my $plugin_instance = new FileInfo::Plugins::APlugin($filename)
+   my $plugin_instance = new File::MetaInfo::Extractor::APlugin($filename)
    
 Takes a filename as parameter
    
@@ -35,7 +35,7 @@ sub new{
 
 =item C<extract>
 
-   my $plugin_instance = new FileInfo::Plugins::APlugin($filename)
+   my $plugin_instance = new File::MetaInfo::Extractor::APlugin($filename)
    my $hashref = $pluing_instance->extract();
    
 Do the extraction work. Returns an hashref where each value is an array of values.

@@ -1,14 +1,14 @@
 #!/usr/bin/perl
 use strict;
 
-package FileInfo::Plugins::Extract;
-use base qw(FileInfo::Plugins);
+package File::MetaInfo::Extract::Keywords;
+use base qw(File::MetaInfo::Extract);
 
-use FileInfo::Utils;
+use File::MetaInfo::Utils;
 #use AutoLoader;
 #
 my $packname = __PACKAGE__;
-my $keywords_name="FileInfo::Plugins.keywords";
+my $keywords_name="File::MetaInfo::Extract.keywords";
 
 my @_extract_keywords;
 
@@ -52,11 +52,11 @@ sub extract($){
 		if (defined($val) && ($val !~ /^$/) && defined($key) && ($self->{exclude} !~ /$key/)){
 			if ($oldkey =~ /date/){
 				warn dmsg "Before key=$oldkey val=$val";
-				FileInfo::Utils::normalize_date(\$val);
+				File::MetaInfo::Utils::normalize_date(\$val);
 				warn dmsg "Normalized key=$oldkey val=$val";
 			}
 #			warn "extract: key=$key\tval=$val\n" if ($self->{debug});
-			FileInfo::Utils::normalize_string(\$val);
+			File::MetaInfo::Utils::normalize_string(\$val);
 			my @vals=split(/ /,$val);
 			push @{$hash{$key}},$val;
 			push @{$hash{$keywords_name}},@vals;
@@ -69,9 +69,9 @@ sub extract($){
 sub test{
 	my $fn=shift;
 	use Data::Dumper;
-	print "FileInfo::Plugins::Extract test method.\n";
+	print "File::MetaInfo::Extract::Keywords test method.\n";
 	print "\tCreating new object from file \"$fn\":\n";
-	my $e = FileInfo::Plugins::Extract->new($fn, debug => 0, exclude => 'filename' ) || die "$@";
+	my $e = File::MetaInfo::Extract::Keywords->new($fn, debug => 0, exclude => 'filename' ) || die "$@";
 	print "\t\t". Dumper($e);
 	print "\tExtracting keywords:\n";
 	my $href = $e->extract;

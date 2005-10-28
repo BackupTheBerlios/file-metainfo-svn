@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 use strict;
 
-package FileInfo::Plugins::MD5;
-use base qw(FileInfo::Plugins);
+package File::MetaInfo::Extract::MD5;
+use base qw(File::MetaInfo::Extract);
 
 use Digest::MD5;
 use Data::Dumper;
@@ -53,7 +53,7 @@ sub extract{
 
 sub test{
 	my $filename=shift;
-	my $md5test=new FileInfo::Plugins::MD5($filename);
+	my $md5test=new File::MetaInfo::Extract::MD5($filename);
 	my $h=$md5test->extract();
 	print Dumper($h);
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-package FileInfo::DB;
+package File::MetaInfo::DB;
 
 use strict;
 use warnings;
@@ -21,7 +21,7 @@ our $KeywordStatus;
 
 #my @StatusFlags=( $LabelledStatus, $KeywordStatus );
 
-my $db="$ENV{HOME}/.FileInfo/FileInfo.db";
+my $db="$ENV{HOME}/.File-MetaInfo/File-MetaInfo.db";
 
 my $sqlGetFiles=qq{ SELECT ROWID,FILENAME,FILEPATH FROM FILE };
 my $sqlGetFilesID=qq{ SELECT ROWID FROM FILE };
@@ -106,7 +106,7 @@ sub close{
 sub create_db{
 	my $self=shift;
 
-	mkdir "$ENV{HOME}/.FileInfo";
+	mkdir "$ENV{HOME}/.File-MetaInfo";
 	`touch $self->{dbfile}`;
 	my $dbh= DBI->connect("dbi:SQLite:dbname=$self->{dbfile}","","") || warn "$!\n";
 	$dbh->do(qq{
@@ -164,7 +164,7 @@ sub add_volume($$$){
 	my $volid=shift;
 	my $volname=shift || 'none';
 
-	warn "DEBUG: FileInfo::DB::add_volume($volid,$volname" if $self->{debug};
+	warn "DEBUG: File::MetaInfo::DB::add_volume($volid,$volname" if $self->{debug};
 
 	my $sqlAddVolume=qq{ INSERT INTO VOLUMES (VOLUME,LABEL) VALUES (?,?) };
 
@@ -212,7 +212,7 @@ sub add_files($$){
 }
 
 sub enqueue_files($$){
-	warn "FileInfo::DB::enquque_file is deprecated";
+	warn "File::MetaInfo::DB::enquque_file is deprecated";
 #	my $self=shift;
 #	my $idlist=shift;
 #	my $flaglist=$self->get_plugin_id();
@@ -339,8 +339,8 @@ sub list_plugins($){
 
 =item C<get_plugin_id>
 
-	my $arrayref=$FileInfoDB->get_plugin_id("FileInfo::Plugins::Dummy");	
-	my $arrayref=$FileInfoDB->get_plugin_id();
+	my $arrayref=$File::MetaInfo->get_plugin_id("File::MetaInfo::Plugins::Dummy");	
+	my $arrayref=$File::MetaInfo->get_plugin_id();
 	
 Returns an arrayref containing the ID of the plugin.
 	
@@ -376,7 +376,7 @@ sub get_plugin_id($$){
 
 sub update_keywords{
 	my $self=shift;
-	warn "DEBUG: FileInfo::DB::update_keywords(@_)" if $self->{debug};
+	warn "DEBUG: File::MetaInfo::DB::update_keywords(@_)" if $self->{debug};
 
 	my $fileID=shift;
 	my $hash=shift;
@@ -385,11 +385,11 @@ sub update_keywords{
 	if (!defined($fileID)){
 		return undef;
 	}
-	warn "DEBUG: FileInfo::DB AutoCommit=" . $self->{dbh}->{AutoCommit} if ($self->{debug});
+	warn "DEBUG: File::MetaInfo::DB AutoCommit=" . $self->{dbh}->{AutoCommit} if ($self->{debug});
 	my $ac = $self->{dbh}->begin_work;
-	warn "DEBUG: FileInfo::DB ac=$ac AutoCommit=" . $self->{dbh}->{AutoCommit} if ($self->{debug});
+	warn "DEBUG: File::MetaInfo::DB ac=$ac AutoCommit=" . $self->{dbh}->{AutoCommit} if ($self->{debug});
 	my $sth = $self->{dbh}->prepare($sqlInsertKeywords);
-	#warn "DEBUG: FileInfo::DB kv_hash=" . Dumper($hash);
+	#warn "DEBUG: File::MetaInfo::DB kv_hash=" . Dumper($hash);
 	foreach my $k (keys(%$hash)){
 		foreach my $v (@{$hash->{$k}}){
 			$ret=$sth->execute($fileID,$k,$v);
@@ -398,7 +398,7 @@ sub update_keywords{
 	}
 	if (defined($ac) and ($ac eq 1)){
 		$self->{dbh}->commit;
-		warn "DEBUG: FileInfo::DB commit ac=$ac AutoCommit=" . $self->{dbh}->{AutoCommit} if ($self->{debug});
+		warn "DEBUG: File::MetaInfo::DB commit ac=$ac AutoCommit=" . $self->{dbh}->{AutoCommit} if ($self->{debug});
 	}
 	return $ret;
 }
@@ -412,7 +412,7 @@ sub update_status{
 	my @para;
 	return undef unless defined($status);
 	warn "DEBUG: $sqlUpdateFileStatus,$status,$id" if ($self->{debug});
-	warn "DEBUG: FileInfo::DB AutoCommit=" . $self->{dbh}->{AutoCommit} if ($self->{debug});
+	warn "DEBUG: File::MetaInfo::DB AutoCommit=" . $self->{dbh}->{AutoCommit} if ($self->{debug});
 	my $ret=$self->{dbh}->do($sqlUpdateFileStatus,undef,$status,$id) || carp_dbh_error($self->{dbh});
 	warn "DEBUG: ret=$ret" if ($self->{debug});
 	return $ret;
@@ -426,12 +426,12 @@ sub reset_status{
 	my $ret;
 	my @stats = stat($filename);
 	if (!defined($stats[0])){
-		warn "DEBUG: FileInfo::DB - file has been (probably) removed" if ($self->{debug});
+		warn "DEBUG: File::MetaInfo::DB - file has been (probably) removed" if ($self->{debug});
 		return undef
 	}
 	else{
 		warn "DEBUG: $sqlResetFileStatus,$stats[9],$id" if ($self->{debug});
-		warn "DEBUG: FileInfo::DB AutoCommit=" . $self->{dbh}->{AutoCommit} if ($self->{debug});
+		warn "DEBUG: File::MetaInfo::DB AutoCommit=" . $self->{dbh}->{AutoCommit} if ($self->{debug});
 		$ret=$self->{dbh}->do($sqlResetFileStatus,undef,$stats[9],$id) || carp_dbh_error($self->{dbh});
 	}
 	return $ret;
@@ -505,7 +505,7 @@ sub get_values{
 	my $self=shift;
 	my $fileID=shift;
 	if (defined($fileID)){
-		carp "DEBUG FileInfo::DB: $sqlGetKeywordsAndValues, $fileID" if ($self->{debug});
+		carp "DEBUG File::MetaInfo::DB: $sqlGetKeywordsAndValues, $fileID" if ($self->{debug});
 		my $sth=$self->{dbh}->prepare($sqlGetKeywordsAndValues) || carp "$!";
 		$sth->execute($fileID) || carp "$!";
 		return $sth->fetchall_arrayref();
@@ -534,11 +534,11 @@ sub get_values_hashref{
 sub exec_sql{
 	my $self=shift;
 	my $sql=shift;
-	carp "DEBUG FileInfo::DB: sql=$sql" if $self->{debug};
+	carp "DEBUG File::MetaInfo::DB: sql=$sql" if $self->{debug};
 	my $sth=$self->{dbh}->prepare($sql);
-	$sth or carp "ERROR FileInfo::DB: DBI (".$self->{dbh}->err."/". $self->{dbh}->state.") $DBI::errstr" if ($self->{debug});
+	$sth or carp "ERROR File::MetaInfo::DB: DBI (".$self->{dbh}->err."/". $self->{dbh}->state.") $DBI::errstr" if ($self->{debug});
 	my $rc=$sth->execute();
-	$rc or carp "ERROR FileInfo::DB: DBI (".$self->{dbh}->err."/". $self->{dbh}->state.") $DBI::errstr" if ($self->{debug});
+	$rc or carp "ERROR File::MetaInfo::DB: DBI (".$self->{dbh}->err."/". $self->{dbh}->state.") $DBI::errstr" if ($self->{debug});
 	return $sth->fetchall_arrayref();
 }
 
@@ -547,7 +547,7 @@ sub create_view{
 	my $name=shift;
 	my $select=shift;
 
-	warn "DEBUG: FileInfo::DB::create_view $name sql=\'$select\'" if $self->{debug};
+	warn "DEBUG: File::MetaInfo::DB::create_view $name sql=\'$select\'" if $self->{debug};
 	push @{$self->{views}},$name;
 	my $sql=qq{ CREATE TEMPORARY VIEW $name AS $select};
 	my $ret=$self->{dbh}->do($sql);
@@ -564,7 +564,7 @@ sub drop_view{
 }
 
 sub process_all_files{
-	warn "WARNING: FileInfo::DB::process_all_files is deprecated!\n";
+	warn "WARNING: File::MetaInfo::DB::process_all_files is deprecated!\n";
 #	my $self=shift;
 #	carp "DEBUG: ::process_all_files(@_)" if $self->{debug};
 #	my $proc=shift;
@@ -604,7 +604,7 @@ sub process_all_files{
 
 sub check{
 	my $self=shift;
-	carp "DEBUG: FileInfo::DB::check(@_)" if $self->{debug};
+	carp "DEBUG: File::MetaInfo::DB::check(@_)" if $self->{debug};
 	
 	my $now=time;
 

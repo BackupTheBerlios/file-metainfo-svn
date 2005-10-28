@@ -1,4 +1,4 @@
-package FileInfo;
+package File::MetaInfo;
 
 use strict;
 use warnings;
@@ -7,8 +7,8 @@ use Carp;
 use Cwd 'abs_path';
 use Term::ReadLine;
 use File::Basename;
-use FileInfo::Plugins;
-use FileInfo::DB;
+use File::MetaInfo::Plugins;
+use File::MetaInfo::DB;
 use Data::Dumper;
 
 BEGIN {
@@ -25,8 +25,8 @@ BEGIN {
 
 our $Moved='M';
 our $Changed='C';
-our $UserLabel='FileInfo::User.labels';
-our $UserRate='FileInfo::User.rate';
+our $UserLabel='File::MetaInfo::User.labels';
+our $UserRate='File::MetaInfo::User.rate';
 my $iconSize=48;
 my $myname=__PACKAGE__;
 
@@ -51,16 +51,16 @@ sub new{
 	}
     
     	if (!defined($self{fileInfoDB})){
-    		warn "DEBUG: FileInfo::new creating a new db connection" if $self{debug};
-		$self{fileInfoDB}=new FileInfo::DB( debug => $self{debug});
+    		warn "DEBUG: File::MetaInfo::new creating a new db connection" if $self{debug};
+		$self{fileInfoDB}=new File::MetaInfo::DB( debug => $self{debug});
     	}
 
 	if ($arg =~ /^\d*$/){
-		warn "DEBUG: FileInfo::new arg is an id: $arg" if $self{debug};
+		warn "DEBUG: File::MetaInfo::new arg is an id: $arg" if $self{debug};
 		$self{id}=$arg;
 	} 
 	elsif ($arg =~ /^\//){
-		warn "DEBUG: FileInfo::new arg is a fullpath: $arg" if $self{debug};
+		warn "DEBUG: File::MetaInfo::new arg is a fullpath: $arg" if $self{debug};
 		$self{fullpath}=$arg;
 		$self{id}=$self{fileInfoDB}->get_file_id($self{fullpath});
 	}
@@ -88,7 +88,7 @@ sub new{
 	$self{changed}=0;
 	$self{removed}=0;
 	
-	warn "DEBUG: FileInfo::new fullpath=$self{fullpath} fileID=$self{id}" if ($self{debug});
+	warn "DEBUG: File::MetaInfo::new fullpath=$self{fullpath} fileID=$self{id}" if ($self{debug});
 
 	my $self = bless \%self, $class;
 
@@ -161,7 +161,7 @@ sub extract_keywords{
 	
 	my $plugins=$self->{fileInfoDB}->list_plugins();
 	my %h;
-	warn "DEBUG: FileInfo plugins:" . Dumper($plugins) if $self->{debug};
+	warn "DEBUG: File::MetaInfo plugins:" . Dumper($plugins) if $self->{debug};
 	foreach my $k (@$plugins){
 		my $class = $k->[0];
 		warn "Class: $class\n" if $self->{debug};
@@ -234,14 +234,14 @@ sub get_keywords{
 
 sub get_values{
 	my $self=shift;
-	warn "WARNING: get_values deprecated method use FileInfo->{keywords}";
+	warn "WARNING: get_values deprecated method use File::MetaInfo->{keywords}";
 	$self or return undef;
 	return $self->{fileInfoDB}->get_values($self->{id});
 }
 
 sub get_values_hashref{
 	my $self=shift;
-	warn "WARNING: get_values_hashref deprecated use FileInfo->{keywords}";
+	warn "WARNING: get_values_hashref deprecated use File::MetaInfo->{keywords}";
 	$self or return undef;
 	my $arrayref=$self->{fileInfoDB}->get_values($self->{id});
 	my %h;
@@ -272,7 +272,7 @@ sub refresh_vfsinfo{
 sub get_gnome2_vfs_info{
 	my $self=shift;
 	use Gnome2::VFS;
-	my $prefix="FileInfo::Gnome2VFS";
+	my $prefix="File::MetaInfo::Gnome2VFS";
 	my $ret;
 	my $gfi;
 
@@ -311,7 +311,7 @@ sub get_gnome2_mime_info{
 	use Gtk2 -init;
 	my $iconInfo;
 	my $iconFile;
-	my $prefix="FileInfo::Gnome2VFS";
+	my $prefix="File::MetaInfo::Gnome2VFS";
 	my $gmi;
 
 	my $mime=Gnome2::VFS->get_mime_type($self->{fullpath});
@@ -430,16 +430,16 @@ sub print_summary{
 	#my $fdir=lc dirname($self->{fullpath});
 	#my @auto_labels=split(/$tokens/,$fdir);
 	#warn "DEBUG: @auto_labels" if ($self->{debug});
-	#return $self->{fileInfoDB}->add_labels($self->{id},\@auto_labels,$FileInfo::DB::AutoLabel);
+	#return $self->{fileInfoDB}->add_labels($self->{id},\@auto_labels,$File::MetaInfo::DB::AutoLabel);
 #}
 
 sub shell{
 	my $fn=shift;
 	#$fn=abs_path($fn);
 	#croak "FATAL: you must specify a file name" unless (-f $fn);
-	my $fi=new FileInfo($fn, debug => 1 )|| die "$!";
-	my $term = new Term::ReadLine 'FileInfo Shell';
-	my $prompt0 = "FileInfo";
+	my $fi=new File::MetaInfo($fn, debug => 1 )|| die "$!";
+	my $term = new Term::ReadLine 'File::MetaInfo Shell';
+	my $prompt0 = "File::MetaInfo";
 	my $OUT = $term->OUT || \*STDOUT;
 	my $prompt = $prompt0 . "[]> ";
 	while ( defined ($_ = $term->readline($prompt)) ) {

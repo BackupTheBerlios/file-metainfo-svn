@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 use strict;
 
-package FileInfo::Plugins::Nautilus;
-use base qw(FileInfo::Plugins);
+package File::MetaInfo::Extract::Nautilus;
+use base qw(File::MetaInfo::Extract);
 
 #use AutoLoader;
 
@@ -66,9 +66,9 @@ sub extract{
 #sub test{
 #	use Data::Dumper;
 #	my $file=shift;
-#	my $p=new FileInfo::Plugins::Nautilus($file, debug => 1);
+#	my $p=new File::MetaInfo::Extract::Nautilus($file, debug => 1);
 #	
-#	print "@FileInfo::Plugins::Nautilus::ISA\n";
+#	print "@File::MetaInfo::Extract::Nautilus::ISA\n";
 #	$p->describe();
 #   print Dumper($p->extract());
 #}
