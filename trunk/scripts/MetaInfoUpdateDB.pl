@@ -1,17 +1,16 @@
-#!/usr/bin/perl -I /home/developement/FileInfo/lib/
+#!/usr/bin/perl 
 
 use strict;
+use lib $ENV{FILEMETAINFO_LIBDIR};
 use Cwd qw(abs_path);
 use Getopt::Long;
 use Carp;
 use File::Basename;
 use File::Find;
-use FileInfo::DB;
-use FileInfo;
+use File::MetaInfo::DB;
+use File::MetaInfo;
 use Time::HiRes;
 use Data::Dumper;
-
-use lib "/home/developement/glocate";
 
 my $debug;
 my $measure;
@@ -37,7 +36,7 @@ my $i=0;
 
 
 GetOptions(
-	"debug" => \$debug,
+	"debug+" => \$debug,
 	"measure" => \$measure,
 	"step=n" => \$step,
 	"cdrom" => \$cdrom,
@@ -48,7 +47,8 @@ GetOptions(
 	"quiet" => \$quiet,
 	"force" => \$force
 );
-my $fdb=new FileInfo::DB( debug=> $debug);
+print "DEBUG Level: $debug\n" if $debug;
+my $fdb=new File::MetaInfo::DB( debug=> ($debug-2));
 
 my $t0=Time::HiRes::time;
 
@@ -58,7 +58,7 @@ if ($#ARGV lt 0){
 
 foreach $basedir (@ARGV){
 
-	$basedir || die "FATAL: You must specify a directory tree to add to the FileInfo::DB";
+	$basedir || die "FATAL: You must specify a directory tree to add to the File::MetaInfo::DB";
 
 	if ($cdrom){
 		$volname || die "Fatal: You should specify a volume name";
@@ -114,12 +114,12 @@ sub add_it{
 	}
 
 	$fdb->begin_work() if (($i % $step) eq 0);
-	my $finfo=new FileInfo(
+	my $finfo=new File::MetaInfo(
 			$fn,
 			fileInfoDB=>$fdb,
 			volumeid=>$volid,
-			excludeKeywords=>"FileInfo::Plugins::Extract.filename",
-			debug=>$debug
+			excludeKeywords=>"File::MetaInfo::Plugins::Extract.filename",
+			debug=>($debug-1)
 			) || die;
 	print "." if (!defined($quiet));
 	if($finfo->{fresh}){

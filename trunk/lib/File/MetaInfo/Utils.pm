@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-package FileInfo::Utils;
+package File::MetaInfo::Utils;
 
 use strict;
 use Time::HiRes;

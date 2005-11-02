@@ -7,7 +7,7 @@ use Carp;
 use Cwd 'abs_path';
 use Term::ReadLine;
 use File::Basename;
-use File::MetaInfo::Plugins;
+use File::MetaInfo::Extract;
 use File::MetaInfo::DB;
 use Data::Dumper;
 
@@ -45,6 +45,7 @@ sub new{
 	$self{infokeys}=[ 'id', 'filename', 'fullpath', 'title', 'summary', 'mimetype'];
 	
 	@self{keys %options} = values %options;
+	$self{debug}=0 if ($self{debug} lt 0);
 	
 	if(!defined($self{volumeid})){
 			$self{volumeid}='0';
@@ -161,11 +162,15 @@ sub extract_keywords{
 	
 	my $plugins=$self->{fileInfoDB}->list_plugins();
 	my %h;
-	warn "DEBUG: File::MetaInfo plugins:" . Dumper($plugins) if $self->{debug};
+	warn "DEBUG: File::MetaInfo::Extract plugins:" . Dumper($plugins) if $self->{debug};
 	foreach my $k (@$plugins){
 		my $class = $k->[0];
 		warn "Class: $class\n" if $self->{debug};
 		eval "require $class";
+		if ($@){
+			warn "$@";
+			return;
+		}
 		my $p=$class->new($self->{fullpath},
 			exclude => $self->{excludeKeywords});
 		if ($p){

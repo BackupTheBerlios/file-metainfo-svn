@@ -1,18 +1,19 @@
-#!/usr/bin/perl -I /home/developement/FileInfo/lib
+#!/usr/bin/perl 
 #
 package main;
 use strict;
+use lib "$ENV{FILEMETAINFO_LIBDIR}";
 use Gtk2 -init;
 use Gtk2::GladeXML;
 use Gtk2::SimpleList;
 use Gnome2;
 use Data::Dumper;
 use Getopt::Long;
-use FileInfo;
-use FileInfo::DB;
+use File::MetaInfo;
+use File::MetaInfo::DB;
 
 my $debug;
-my $uifilepath="/home/developement/FileInfo/scripts/UI/GFileInfo";
+my $uifilepath="$ENV{FILEMETAINFO_UIDIR}";
 my $uifile="gfileinfoaddlabel.glade";
 my $myname="GFileInfoAddLabel";
 my $version="0.1";
@@ -59,29 +60,29 @@ if (defined($ENV{NAUTILUS_SCRIPT_SELECTED_FILE_PATHS})){
 }
 
 die "You must specify a filename" unless $fn;
-my $fdb=new FileInfo::DB( debug => $debug ) || die "Could not open db";
-my $fi=new FileInfo(
+my $fdb=new File::MetaInfo::DB( debug => $debug ) || die "Could not open db";
+my $fi=new File::MetaInfo(
                 $fn,
 		fileInfoDB=>$fdb,
                 debug=>$debug
         );
 
-die "Error creating FileInfo object for \'$fn\'" unless $fi;
+die "Error creating File::MetaInfo object for \'$fn\'" unless $fi;
 
-my $aref=$fdb->list_all_values_for_keyword($FileInfo::UserLabel);
+my $aref=$fdb->list_all_values_for_keyword($File::MetaInfo::UserLabel);
 
 foreach my $lab (@$aref){
 	warn dmsg $$lab[0] if $debug;
 	$labelcomboentry->append_text($$lab[0]);
 }
 
-if (defined(@{$fi->{keywords}->{$FileInfo::UserLabel}})){
-	my $labels=join(',',@{$fi->{keywords}->{$FileInfo::UserLabel}});
+if (defined(@{$fi->{keywords}->{$File::MetaInfo::UserLabel}})){
+	my $labels=join(',',@{$fi->{keywords}->{$File::MetaInfo::UserLabel}});
 	warn dmsg "Labels: $labels" if $debug;
 	$labelslabel->set_markup("<i>$labels</i>");
 }
 
-my $rate=${$fi->{keywords}->{$FileInfo::UserRate}}[0];
+my $rate=${$fi->{keywords}->{$File::MetaInfo::UserRate}}[0];
 warn dmsg "Current rate= $rate" if $debug;
 if (defined($rate)){
 	$ratescale->set_value($rate);
@@ -104,11 +105,11 @@ sub process_label{
 	my $rate=$ratescale->get_value;
 	if (defined($label) && $label !~ /^$/){
 		warn dmsg "Label: " . $label if $debug;
-		my $ret=$fi->add_keyword($FileInfo::UserLabel,$label);
+		my $ret=$fi->add_keyword($File::MetaInfo::UserLabel,$label);
 		warn dmsg "Label addedd with ret ($ret)" if $debug;
 	}
 	warn dmsg "Rating: " . $rate if $debug;
-	my $ret=$fi->replace_keyword($FileInfo::UserRate,$rate);
+	my $ret=$fi->replace_keyword($File::MetaInfo::UserRate,$rate);
 	warn dmsg "Rating addedd with ret ($ret)" if $debug;
 }
 

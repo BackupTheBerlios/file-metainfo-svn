@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 
-package File::MetaInfo::Extractor;
+package File::MetaInfo::Extract;
 
 =head1 NAME
 
-File::MetaInfo::Extractor - Generic Extractor class for FileInfo. Used only to document which methods 
+File::MetaInfo::Extractor - Generic Extract class for File::MetaInfo. Used only to document which methods 
 a plugin must have andwhat is expected to return
 
 =head1 SYNOPSIS
@@ -72,10 +72,10 @@ sub describe{
 }
 
 sub register{
-	use FileInfo::DB;
+	use File::MetaInfo::DB;
     my $packname = shift;
 	my $debug=shift;
-	my $db=new FileInfo::DB(debug=>$debug);
+	my $db=new File::MetaInfo::DB(debug=>$debug);
 	print "Registering \"$packname\"\n";
 	my $rc=$db->register($packname);
     $db->close();

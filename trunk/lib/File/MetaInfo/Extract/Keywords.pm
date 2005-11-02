@@ -38,7 +38,7 @@ sub new{
         return $self;
 }
 
-sub extract($){
+sub extract{
 	my $self=shift;
 
 	my %hash;
@@ -51,9 +51,9 @@ sub extract($){
 		$key=$packname . '.' . $key;
 		if (defined($val) && ($val !~ /^$/) && defined($key) && ($self->{exclude} !~ /$key/)){
 			if ($oldkey =~ /date/){
-				warn dmsg "Before key=$oldkey val=$val";
+				warn dmsg "Before key=$oldkey val=$val" if ($self->{debug});
 				File::MetaInfo::Utils::normalize_date(\$val);
-				warn dmsg "Normalized key=$oldkey val=$val";
+				warn dmsg "Normalized key=$oldkey val=$val" if ($self->{debug});
 			}
 #			warn "extract: key=$key\tval=$val\n" if ($self->{debug});
 			File::MetaInfo::Utils::normalize_string(\$val);

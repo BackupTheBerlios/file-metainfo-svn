@@ -1,4 +1,4 @@
-perl -I/home/developement/FileInfo/lib -MFileInfo::Plugins::Extract -e "FileInfo::Plugins::Extract->register($1);"
-perl -I/home/developement/FileInfo/lib -MFileInfo::Plugins::Nautilus -e "FileInfo::Plugins::Nautilus->register($1);"
-perl -I/home/developement/FileInfo/lib -MFileInfo::Plugins::MD5 -e "FileInfo::Plugins::MD5->register($1);"
-perl -I/home/developement/FileInfo/lib -MFileInfo::Plugins::MimeType -e "FileInfo::Plugins::MimeType->register($1);"
+perl -I$FILEMETAINFO_LIBDIR -MFile::MetaInfo::Extract::Keywords -e "File::MetaInfo::Extract::Keywords->register($1);"
+perl -I$FILEMETAINFO_LIBDIR -MFile::MetaInfo::Extract::Nautilus -e "File::MetaInfo::Extract::Nautilus->register($1);"
+perl -I$FILEMETAINFO_LIBDIR -MFile::MetaInfo::Extract::MD5 -e "File::MetaInfo::Extract::MD5->register($1);"
+perl -I$FILEMETAINFO_LIBDIR -MFile::MetaInfo::Extract::MimeType -e "File::MetaInfo::Extract::MimeType->register($1);"

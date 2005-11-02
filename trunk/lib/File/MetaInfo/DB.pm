@@ -72,6 +72,7 @@ sub new{
 
 
 	@self{keys %options} = values %options;
+	$self{debug}=0 if ($self{debug} lt 0);
 
 	$self{dbh}= DBI->connect("dbi:SQLite:dbname=$self{dbfile}","","", {
 		 PrintError => $self{debug},
@@ -235,7 +236,7 @@ sub get_file_id($$){
 	my $filename=shift;
 	my $fname=basename($filename);
 	my $fpath=dirname($filename);
-	carp "DEBUG: $sqlGetIDByName , $fname, $fpath" if ($self->{debug});
+	carp "DEBUG (" . $self->{debug} . "): $sqlGetIDByName , $fname, $fpath" if ($self->{debug});
 	my $sth=$self->{dbh}->prepare($sqlGetIDByName) || carp "$!";
 	$sth->execute($fname,$fpath) || carp "Cannot execute query: $!";
 	my $id=$sth->fetchall_arrayref();
