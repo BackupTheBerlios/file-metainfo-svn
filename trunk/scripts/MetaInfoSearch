@@ -1,9 +1,10 @@
-#!/usr/bin/perl -I /home/developement/glocate
+#!/usr/bin/perl 
 #
 
 use strict;
-use FileInfo;
-use FileInfo::DB;
+use lib $ENV{FILEMETAINFO_LIBDIR};
+use File::MetaInfo;
+use File::MetaInfo::DB;
 use Data::Dumper;
 use Getopt::Long;
 
@@ -11,7 +12,7 @@ my $keywords;
 my $byn=1;
 my ($s,$m);
 my $ret_name;
-my $debug;
+my $debug=0;
 my $brief=0;
 my $long=1;
 my $gnome;
@@ -22,7 +23,7 @@ GetOptions(
 	name => \$byn,
 	filename => \$ret_name,
 	measure => \$m,
-	debug => \$debug,
+	"debug+" => \$debug,
 	"nokeywords=s" => \@nokeys,
 	brief => \$brief,
 	longlist => \$long,
@@ -33,7 +34,7 @@ GetOptions(
 my $value=shift;
 
 die "You must specify a query.\n" unless $value;
-my $fdb=new FileInfo::DB( debug => $debug) || die "Could not open DB\n";
+my $fdb=new File::MetaInfo::DB( debug => $debug) || die "Could not open DB\n";
 
 my $t0=Time::HiRes::time if ($m);
 
@@ -46,13 +47,13 @@ $t0=Time::HiRes::time if ($m);
 foreach (@$arrayref){
 	print "DEBUG: $$_[0]\n" if $debug;
 	#my $tn0=Time::HiRes::time if ($m);
-	my $fi=new FileInfo(
+	my $fi=new File::MetaInfo(
 		 $$_[0],
 	 	 fileInfoDB => $fdb,
 	 	 debug => $debug
-	) || die "Could not instantiate FileInfo: $@\n";
+	) || die "Could not instantiate File::MetaInfo: $@\n";
 	#my $tnf=Time::HiRes::time if ($m);
-	#warn "TIMES: FileInfo::new() elapsed in " . ($tnf - $tn0) . " seconds\n" if ($m);
+	#warn "TIMES: File::MetaInfo::new() elapsed in " . ($tnf - $tn0) . " seconds\n" if ($m);
 	if ($brief){
 		print $fi->{fullpath} . "\n";
 	}

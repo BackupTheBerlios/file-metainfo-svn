@@ -1,7 +1,8 @@
-#!/usr/bin/perl -I /home/developement/FileInfo/lib
+#!/usr/bin/perl
 
 package main;
 use strict;
+use lib $ENV{FILEMETAINFO_LIBDIR};
 use Glib qw/TRUE FALSE/;
 use Gtk2 -init;
 use Gtk2::GladeXML;
@@ -9,16 +10,15 @@ use Gtk2::SimpleList;
 use Gnome2;
 use Data::Dumper;
 use Getopt::Long;
-use FileInfo;
-use FileInfo::DB;
-use FileInfo::Utils;
+use File::MetaInfo;
+use File::MetaInfo::DB;
+use File::MetaInfo::Utils;
 
 my $debug;
 my $PREFIX 	= '/usr/local';
 my $NAME 	="GBrowser";
 my $VERSION 	="0.01";
-#my $uifile=(-d $PREFIX ? sprintf('%s/share/%s', $PREFIX, lc($NAME)) : $ENV{PWD}).sprintf('/%s.glade', lc($NAME));
-my $uifile="/home/developement/FileInfo/glade/gbrowser.glade";
+my $uifile=(-d "$PREFIX/" . lc($NAME) ? sprintf('%s/share/%s', $PREFIX, lc($NAME)) : $ENV{FILEMETAINFO_UIDIR}).sprintf('/%s.glade', lc($NAME));
 my $LOCALE_DIR		= (-d $PREFIX ? "PREFIX/share/locale" : $ENV{PWD}.'/locale');
 my $RCFILE		= sprintf('%s/.%src', $ENV{HOME}, lc($NAME));
 
@@ -36,7 +36,7 @@ sub dmsg{ return "*** DEBUG [$NAME]: @_" };
 ################################
 
 GetOptions(
-	"debug" => \$debug,
+	"debug+" => \$debug,
 
 );
 
@@ -123,9 +123,9 @@ $fileview->insert_column_with_attributes( 1, 'Folder', $crend, text => FV_C_FOLD
 
 # Keyword Tree Initialization
 
-my $fdb=new FileInfo::DB( debug => $debug ) || die "Could not open db";
+my $fdb=new File::MetaInfo::DB( debug => ($debug-2) ) || die "Could not open db";
 my $aref=$fdb->list_all_keywords();
-#my $aref=$fdb->list_all_values_for_keyword($FileInfo::UserLabel);
+#my $aref=$fdb->list_all_values_for_keyword($File::MetaInfo::UserLabel);
 if ($debug){
 	warn dmsg "@{$aref}";
 }
@@ -162,12 +162,14 @@ warn dmsg "- Exiting" if $debug;
 
 sub _destroy
 {
+	Gtk2->main_iteration while (Gtk2->events_pending);
         Gtk2->main_quit;
 	1;
 }
 
 sub gtk_main_quit
 {
+	Gtk2->main_iteration while (Gtk2->events_pending);
         Gtk2->main_quit;
 	1;
 }
@@ -268,17 +270,17 @@ sub populate_fileview{
 	foreach my $j (@{$aref}){
 		warn dmsg "files matching keyword: " . $j->[0] if ($debug);
 		Gtk2->main_iteration while (Gtk2->events_pending);
-		my $fi=new FileInfo(
+		my $fi=new File::MetaInfo(
 			$j->[0],
 			fileInfoDB=> $fdb,
-			debug => 0
+			debug => ($debug-1)
 		);
 		$fi->refresh_vfsinfo();
 		my $dstiter=$dstmodel->append();
 
-		my $iconfile=$fi->{vfsinfo}->{'FileInfo::Gnome2VFS.icon_file'};
-                warn dmsg "iconname=" . Dumper($fi->{vfsinfo}->{'FileInfo::Gnome2VFS.icon_name'}) if $debug;
-                warn dmsg "iconfile=" . Dumper($fi->{vfsinfo}->{'FileInfo::Gnome2VFS.icon_file'}) if $debug;
+		my $iconfile=$fi->{vfsinfo}->{'File::MetaInfo::Gnome2VFS.icon_file'};
+                warn dmsg "iconname=" . Dumper($fi->{vfsinfo}->{'File::MetaInfo::Gnome2VFS.icon_name'}) if $debug;
+                warn dmsg "iconfile=" . Dumper($fi->{vfsinfo}->{'File::MetaInfo::Gnome2VFS.icon_file'}) if $debug;
 		my $newpixbuf;
                 if (defined($iconfile)){
                         warn dmsg "Icon is $iconfile" if $debug;
@@ -307,7 +309,7 @@ sub add_hash_to_tree{
 		my $varef=$fdb->list_all_values_for_keyword($href->{$k});
 		foreach my $val (@{$varef}){
 			Gtk2->main_iteration while (Gtk2->events_pending);
-			FileInfo::Utils::normalize_string(\${$val}[0]);
+			File::MetaInfo::Utils::normalize_string(\${$val}[0]);
 			warn dmsg "Value: @{$val}" if $debug;
 			my $child_iter=$tree->append($parent_iter);
 			$tree->set($child_iter,0,"@{$val}");

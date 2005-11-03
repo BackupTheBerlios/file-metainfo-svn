@@ -12,6 +12,8 @@ use File::MetaInfo;
 use Time::HiRes;
 use Data::Dumper;
 
+my $NAME="MetaInfoUpdateDB";
+
 my $debug;
 my $measure;
 my $basedir;
@@ -103,7 +105,7 @@ $fdb->close();
 #############
 #
 sub add_it{
-	warn "DEBUG: main::add_it::filename=$File::Find::name\n" if $debug;
+	warn "DEBUG: main::add_it::filename=$File::Find::name - @_\n" if $debug;
 	my $fn=$File::Find::name;
 	print "$fn->" if $verbose;
 	if (defined($excl{$fn}) || (defined($exp) and $fn =~ /$exp/) ){
