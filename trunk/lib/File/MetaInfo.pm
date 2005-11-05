@@ -265,11 +265,13 @@ sub refresh_keywords{
 
 sub refresh_vfsinfo{
 	my $self=shift;
-	my $ret1=$self->get_gnome2_vfs_info;
-	my $ret2=$self->get_gnome2_mime_info;
-	if (defined($ret1) && defined($ret2)){
-		$self->{vfsinfo_lastrefresh}=time;
-		return 0;
+	if (-f $self->{fullpath} || -d $self->{fullpath}){
+		my $ret1=$self->get_gnome2_vfs_info;
+		my $ret2=$self->get_gnome2_mime_info;
+		if (defined($ret1) && defined($ret2)){
+			$self->{vfsinfo_lastrefresh}=time;
+			return 0;
+		}
 	}
 	return undef;
 }
@@ -319,7 +321,17 @@ sub get_gnome2_mime_info{
 	my $prefix="File::MetaInfo::Gnome2VFS";
 	my $gmi;
 
+	if (!defined($self->{gnome2vfs})){
+		$self->{gnome2vfs}=Gnome2::VFS->init();
+		warn "Warning: $@\n" if $self->{debug};
+		$self->{gnome2vfs} or return undef;
+	}
+
 	my $mime=Gnome2::VFS->get_mime_type($self->{fullpath});
+	if (!defined($mime)){
+		carp "Error getting mime type for ". $self->{fullpath};
+		return undef;
+	}
 	my $mime_type = new Gnome2::VFS::Mime::Type($mime);
 	my $applist = $mime_type->get_all_applications();
 	my $application = $mime_type->get_default_application();

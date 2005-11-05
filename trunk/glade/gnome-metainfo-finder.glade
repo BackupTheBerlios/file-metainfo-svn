@@ -5,12 +5,12 @@
 <requires lib="gnome"/>
 <requires lib="bonobo"/>
 
-<widget class="GnomeApp" id="GBrowser">
+<widget class="GnomeApp" id="gnome-metainfo-finder">
   <property name="width_request">600</property>
   <property name="height_request">400</property>
   <property name="visible">True</property>
   <property name="can_default">True</property>
-  <property name="title" translatable="yes">GBrowser</property>
+  <property name="title" translatable="yes">gnome-metainfo-finder</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
   <property name="modal">False</property>

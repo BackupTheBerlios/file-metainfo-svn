@@ -1,3 +1,9 @@
+if [ -x setenv.sh ]; then
+	. setenv.sh
+else 
+	echo "No setenv.sh"
+	exit 1
+fi
 echo "Registering plugins"
 perl -I$FILEMETAINFO_LIBDIR -MFile::MetaInfo::Extract::Keywords -e "File::MetaInfo::Extract::Keywords->register($1);"
 perl -I$FILEMETAINFO_LIBDIR -MFile::MetaInfo::Extract::Nautilus -e "File::MetaInfo::Extract::Nautilus->register($1);"
@@ -6,6 +12,6 @@ perl -I$FILEMETAINFO_LIBDIR -MFile::MetaInfo::Extract::MimeType -e "File::MetaIn
 
 echo "Creating nautilus scripts"
 NAUTILUS_SCRIPTNAME='Add Label...'
-[ -L $HOME/.gnome2/nautilus-scripts ] || rm $NAUTILUS_SCRIPTNAME
-
+[ -L "$HOME/.gnome2/nautilus-scripts/$NAUTILUS_SCRIPTNAME" ] && rm "$HOME/.gnome2/nautilus-scripts/$NAUTILUS_SCRIPTNAME"
+ln -s $FILEMETAINFO_BASEDIR/scripts/UI/GFileInfoAddLabel "$HOME/.gnome2/nautilus-scripts/$NAUTILUS_SCRIPTNAME"
 

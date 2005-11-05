@@ -74,13 +74,13 @@ sub describe{
 sub register{
 	use File::MetaInfo::DB;
     my $packname = shift;
-	my $debug=shift;
+	my $debug=shift || 0;
 	my $db=new File::MetaInfo::DB(debug=>$debug);
 	print "Registering \"$packname\"\n";
 	my $rc=$db->register($packname);
     $db->close();
-	print Dumper($rc);
-	$rc or warn "Warning: Could not register \"$packname\"\n";
+	print Dumper($rc) if ($debug);
+	$rc or warn "Warning: Could not register \"$packname\": already registered?\n";
 
     print "Registered \"$packname\": $rc\n";
 }

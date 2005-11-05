@@ -1,7 +1,22 @@
-A simple keyword indexing and searching system for files.
+File::MetaInfo - A simple keyword indexing and searching system for files.
+Brief and Dirty Instructions
+============================
 
+For now there is no Makefile.PL file. I need help do do this a Bundle.
 
-1. Index the files
-1.1 Import a directory tree: the files are marked to be processed by the plugins
-1.2 process the enqueued file: the plugins are run on the queued files to extract the informations
+Collecting Meta-Data (Indexing)
+-------------------------------
+
+go to scripts directory
+   1. edit setenv.sh 
+      Edit at least the FILEMETAINFO_BASEDIR to match your installation directory
+   2. run setenv.sh
+   3. run setup.sh
+      This will create the db and register the Extract modules and create the Nautilus Scripts
+   4. run MetaInfoUpdateDB BASEDIR
+      BASEDIR is the directory you want to scan for indexing
+
+Adding tags to files
+--------------------
+
 

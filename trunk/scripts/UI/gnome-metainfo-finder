@@ -16,7 +16,7 @@ use File::MetaInfo::Utils;
 
 my $debug;
 my $PREFIX 	= '/usr/local';
-my $NAME 	="GBrowser";
+my $NAME 	="gnome-metainfo-finder";
 my $VERSION 	="0.01";
 my $uifile=(-d "$PREFIX/" . lc($NAME) ? sprintf('%s/share/%s', $PREFIX, lc($NAME)) : $ENV{FILEMETAINFO_UIDIR}).sprintf('/%s.glade', lc($NAME));
 my $LOCALE_DIR		= (-d $PREFIX ? "PREFIX/share/locale" : $ENV{PWD}.'/locale');
