@@ -43,7 +43,7 @@ GetOptions(
 #########################################
 # Glade UI loading and application init #
 #########################################
-my $mainwidget="GBrowser";
+my $mainwidget=$NAME;
 
 my $screen=Gtk2::Gdk::Screen->get_default;
 Gnome2::Program->init ($NAME, $VERSION);

@@ -13,5 +13,5 @@ perl -I$FILEMETAINFO_LIBDIR -MFile::MetaInfo::Extract::MimeType -e "File::MetaIn
 echo "Creating nautilus scripts"
 NAUTILUS_SCRIPTNAME='Add Label...'
 [ -L "$HOME/.gnome2/nautilus-scripts/$NAUTILUS_SCRIPTNAME" ] && rm "$HOME/.gnome2/nautilus-scripts/$NAUTILUS_SCRIPTNAME"
-ln -s $FILEMETAINFO_BASEDIR/scripts/UI/GFileInfoAddLabel "$HOME/.gnome2/nautilus-scripts/$NAUTILUS_SCRIPTNAME"
+ln -s $FILEMETAINFO_BASEDIR/scripts/UI/gnome-metainfo-add "$HOME/.gnome2/nautilus-scripts/$NAUTILUS_SCRIPTNAME"
 
