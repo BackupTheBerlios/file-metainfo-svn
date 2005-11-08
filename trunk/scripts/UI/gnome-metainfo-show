@@ -11,7 +11,8 @@ use Data::Dumper;
 use Getopt::Long;
 use File::MetaInfo;
 
-my $NAME='gnome-metainfo-show';
+our $NAME='gnome-metainfo-show';
+our $VERSION='0.1';
 
 my $debug;
 my $uidir=$ENV{FILEMETAINFO_UIDIR};
@@ -28,9 +29,9 @@ if (!defined($filename)){
         die "Missing filename\n";
 }
 
-Gnome2::Program->init ("$NAME", "0.1");
+Gnome2::Program->init ("$NAME", "$VERSION");
 my $screen=Gtk2::Gdk::Screen->get_default;
-my $app = Gnome2::App->new ("$NAME/Simple");
+my $app = Gnome2::App->new ("$NAME");
 my $gladexml = Gtk2::GladeXML->new($ui);
 $gladexml->signal_autoconnect_from_package('main');
 

@@ -54,7 +54,6 @@ my $window=$gladexml->get_widget($mainwidget);
 $gladexml->signal_autoconnect_from_package('main');
 $window->signal_connect('destroy',\&_destroy);
 
-
 my $crend=Gtk2::CellRendererText->new();
 $crend->set (markup=>1);
 
@@ -143,7 +142,9 @@ foreach my $e (@{$aref}){
 		$ukws{$kw}=${$e}[0];
 	}
 	else {
-		$kws{$kw}=${$e}[0];
+		if ($1 !~ /^Extract.keywords$/){ #skip the ''index''
+			$kws{$kw}=${$e}[0];
+		}
 	}
 }
 
@@ -310,7 +311,7 @@ sub add_hash_to_tree{
 		foreach my $val (@{$varef}){
 			Gtk2->main_iteration while (Gtk2->events_pending);
 			File::MetaInfo::Utils::normalize_string(\${$val}[0]);
-			warn dmsg "Value: @{$val}" if $debug;
+			warn dmsg "Key: $k Value: @{$val}" if $debug;
 			my $child_iter=$tree->append($parent_iter);
 			$tree->set($child_iter,0,"@{$val}");
 		}
