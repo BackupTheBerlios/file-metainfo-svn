@@ -8,32 +8,51 @@ use File::MetaInfo::DB;
 use Data::Dumper;
 use Getopt::Long;
 
-my $keywords;
-my $byn=1;
+our $NAME="MetaInfoSearch";
+our $VERSION="0.1";
+our $USAGE=
+"Usage: $NAME [options] KEYWORDS
+Search your File::MetaInfo DB for files matching the KEYWORD.
+Your DB is located under \'$File::MetaInfo::DB::defaultlocation\'.
+
+Options:
+  -b, --brief 	Show only the full path (as locate do)
+  -l, --long 	Show also other informations about the files found
+  -m, --matching 	In 'brief' mode print matching keywords
+
+  -t, --times 	Show times
+  -d, --debug
+  -n, --nokeywords
+  -g, --gnome-vfs
+";
+
 my ($s,$m);
-my $ret_name;
 my $debug=0;
 my $brief=0;
 my $long=1;
+my $match=0;
 my $gnome;
 my @nokeys;
+my $help;
 
 GetOptions(
-	keywords => \$keywords,
-	name => \$byn,
-	filename => \$ret_name,
-	measure => \$m,
+	"times" => \$m,
 	"debug+" => \$debug,
 	"nokeywords=s" => \@nokeys,
 	brief => \$brief,
-	longlist => \$long,
-	'gnome-vfs' => \$gnome
-
+	long => \$long,
+	'gnome-vfs' => \$gnome,
+	matching => \$match,
+	help => \$help
 );
+
 
 my $value=shift;
 
-die "You must specify a query.\n" unless $value;
+if ($help || !defined($value)){
+	print $USAGE;
+	exit 0
+}
 my $fdb=new File::MetaInfo::DB( debug => $debug) || die "Could not open DB\n";
 
 my $t0=Time::HiRes::time if ($m);
@@ -55,12 +74,16 @@ foreach (@$arrayref){
 	#my $tnf=Time::HiRes::time if ($m);
 	#warn "TIMES: File::MetaInfo::new() elapsed in " . ($tnf - $tn0) . " seconds\n" if ($m);
 	if ($brief){
-		print $fi->{fullpath} . "\n";
+		print $fi->{fullpath};
+		if ($match){
+			print " [" . $fi->sprintf_matching_keywords($value) . "]";
+		}
+		print "\n";
 	}
 	else{
 	 	$fi->print_info(": ");
 	 	print "Keywords:\n\t";
-	 	$fi->print_values(":\t","\n\t",",");
+	 	$fi->print_values(":\t","\n\t",",",$value);
 		if ($gnome){
 			print "VFS Info:\n";
 			$fi->print_gnome2_info();

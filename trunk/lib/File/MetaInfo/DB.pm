@@ -21,7 +21,8 @@ our $KeywordStatus;
 
 #my @StatusFlags=( $LabelledStatus, $KeywordStatus );
 
-my $db="$ENV{HOME}/.File-MetaInfo/File-MetaInfo.db";
+our $defaultlocation="$ENV{HOME}/.File-MetaInfo/File-MetaInfo.db";
+my $db=$defaultlocation;
 
 my $sqlGetFiles=qq{ SELECT ROWID,FILENAME,FILEPATH FROM FILE };
 my $sqlGetFilesID=qq{ SELECT ROWID FROM FILE };

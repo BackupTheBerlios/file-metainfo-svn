@@ -28,9 +28,9 @@ our $Changed='C';
 our $UserLabel='File::MetaInfo::User.labels';
 our $UserRate='File::MetaInfo::User.rate';
 my $iconSize=48;
-my $myname=__PACKAGE__;
+our $NAME=__PACKAGE__;
 
-sub dmsg{ return "*** DEBUG [$myname]: @_" }
+sub dmsg{ return "*** DEBUG [$NAME]: @_" }
 
 sub new{
 	my $this=shift;
@@ -246,7 +246,7 @@ sub get_values{
 
 sub get_values_hashref{
 	my $self=shift;
-	warn "WARNING: get_values_hashref deprecated use File::MetaInfo->{keywords}";
+	carp "WARNING: get_values_hashref deprecated use File::MetaInfo->{keywords}";
 	$self or return undef;
 	my $arrayref=$self->{fileInfoDB}->get_values($self->{id});
 	my %h;
@@ -389,11 +389,36 @@ sub print_values{
 	my $sep1=shift || "=";
 	my $sep2=shift || "\n";
 	my $sep3=shift || ",";
+	my $hilite=shift || undef;
 	my $OUT=shift || \*STDOUT;
-	my $h=$self->get_values_hashref();
-	foreach my $k (sort(keys %{$h})){
-		print $OUT "$k$sep1" . join ($sep3, @{$h->{$k}}) . "$sep2";
+	#my $h=$self->get_values_hashref();
+	foreach my $k (sort(keys %{$self->{keywords}})){
+		my $pline="$k$sep1" . join ($sep3, @{$self->{keywords}->{$k}}) . "$sep2";
+		if ($hilite){
+			$pline=~s/$hilite/[01m$hilite[0;0m/;	
+		}
+		print $OUT $pline;
 	}
+}
+
+sub sprintf_matching_keywords{
+	my $self=shift;
+	my $value=shift || undef;
+	my $sep1=shift || "=";
+	my $sep2=shift || ",";
+	my @pline;
+	carp "NOTE: Slow method has to be rewritten using data from the query" if ($self->{debug});
+	return undef unless $value;
+	foreach my $k (keys %{$self->{keywords}}){
+		#warn dmsg . "keyword: @{$self->{keywords}->{$k}}";
+		foreach my $l (@{$self->{keywords}->{$k}}){
+			if ($l=~/$value/ || $k=~/$value/){
+				$k=~s/$NAME\:\://;
+				push @pline,"$k$sep1$l";
+			}
+		}
+	}
+	return join($sep2,@pline);
 }
 
 sub print_info{
@@ -405,8 +430,9 @@ sub print_info{
 		if (defined($self->{$k})){
 			if (ref($self->{$k}) eq "ARRAY" ){
 				print $OUT "$k$sep1";
-				print $OUT join($sep2,@{$self->{$k}});
-				print "\n";
+				my $pline=join($sep2,@{$self->{$k}});
+				print $OUT $pline;
+				print $OUT "\n";
 			}
 			else{
 				print $OUT "$k$sep1$self->{$k}\n";
