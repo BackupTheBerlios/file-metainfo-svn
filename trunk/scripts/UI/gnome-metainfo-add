@@ -2,7 +2,7 @@
 #
 package main;
 use strict;
-use lib "$ENV{FILEMETAINFO_LIBDIR}";
+use lib "$ENV{FILEMETAINFO_BASEDIR}/lib";
 use Gtk2 -init;
 use Gtk2::GladeXML;
 use Gtk2::SimpleList;
@@ -11,14 +11,15 @@ use Data::Dumper;
 use Getopt::Long;
 use File::MetaInfo;
 use File::MetaInfo::DB;
+use File::MetaInfo::Utils qq(normalize_strings);
 
 my $debug;
-my $uifilepath="$ENV{FILEMETAINFO_UIDIR}";
-my $uifile="gfileinfoaddlabel.glade";
-my $myname="GFileInfoAddLabel";
-my $version="0.1";
+my $uifilepath="$ENV{FILEMETAINFO_BASEDIR}/glade";
+my $uifile="gnome-metainfo-add.glade";
+our $NAME="gnome-metainfo-add";
+our $VERSION="0.1";
 
-sub dmsg{ return "*** DEBUG [$myname]: @_" };
+sub dmsg{ return "*** DEBUG [$NAME]: @_" };
 
 ################################
 # Options parsing and settings #
@@ -32,9 +33,9 @@ GetOptions(
 # Glade UI loading and application init #
 #########################################
 
-Gnome2::Program->init ($myname, $version);
+Gnome2::Program->init ($NAME, $VERSION);
 my $screen=Gtk2::Gdk::Screen->get_default;
-my $app = Gnome2::App->new ("$myname/Simple");
+my $app = Gnome2::App->new ("$NAME");
 my $gladexml = Gtk2::GladeXML->new("$uifilepath/$uifile");
 $gladexml->signal_autoconnect_from_package('main');
 my $window=$gladexml->get_widget('selectlabelwin');
@@ -58,6 +59,8 @@ if (defined($ENV{NAUTILUS_SCRIPT_SELECTED_FILE_PATHS})){
 	$fn=$ENV{NAUTILUS_SCRIPT_SELECTED_FILE_PATHS};
 	chomp $fn;
 }
+
+$window->set_title($fn);
 
 die "You must specify a filename" unless $fn;
 my $fdb=new File::MetaInfo::DB( debug => $debug ) || die "Could not open db";
@@ -105,8 +108,12 @@ sub process_label{
 	my $rate=$ratescale->get_value;
 	if (defined($label) && $label !~ /^$/){
 		warn dmsg "Label: " . $label if $debug;
-		my $ret=$fi->add_keyword($File::MetaInfo::UserLabel,$label);
-		warn dmsg "Label addedd with ret ($ret)" if $debug;
+		my @labels=split(',',$label);
+		foreach my $l (@labels){
+			File::MetaInfo::Utils::normalize_string(\$l);
+			my $ret=$fi->add_keyword($File::MetaInfo::UserLabel,$l);
+			warn dmsg "Label $l addedd with ret ($ret)" if $debug;
+		}
 	}
 	warn dmsg "Rating: " . $rate if $debug;
 	my $ret=$fi->replace_keyword($File::MetaInfo::UserRate,$rate);

@@ -625,7 +625,7 @@ sub register{
 	return $rc;
 }
 
-sub search{
+sub search_full{
 	my $self=shift;
 	my $value=shift;
 
@@ -640,12 +640,12 @@ sub search_keyval{
 	my $hashref=shift;
     # hashref must be in the folowing format:
     # {
-    #    keywords=> "keyword1",
-    #	 values=> "value1",
+    #    keyword=> "keyword1",
+    #	 value=> "value1",
     # }
     #
     
-	my $sql=qq{SELECT DISTINCT FILE.ROWID FROM FILE,KEYWORDS WHERE (FILE.ROWID=KEYWORDS.FILE_ID AND ( KEYWORDS.KEYWORD LIKE '%$hashref->{keyword}%' AND KEYWORDS.VALUE LIKE '%$hashref->{value}%')};
+	my $sql=qq{SELECT DISTINCT FILE.ROWID FROM FILE,KEYWORDS WHERE (FILE.ROWID=KEYWORDS.FILE_ID AND KEYWORDS.KEYWORD='$hashref->{keyword}' AND KEYWORDS.VALUE LIKE '%$hashref->{value}%')};
 
 	return $self->exec_sql($sql);
 }

@@ -403,7 +403,7 @@ sub print_values{
 
 sub sprintf_matching_keywords{
 	my $self=shift;
-	my $value=shift || undef;
+	my $value=lc shift || undef;
 	my $sep1=shift || "=";
 	my $sep2=shift || ",";
 	my @pline;
@@ -414,6 +414,7 @@ sub sprintf_matching_keywords{
 		foreach my $l (@{$self->{keywords}->{$k}}){
 			if ($l=~/$value/ || $k=~/$value/){
 				$k=~s/$NAME\:\://;
+				$l=~s/$value/[01m$value[0;0m/;	
 				push @pline,"$k$sep1$l";
 			}
 		}
