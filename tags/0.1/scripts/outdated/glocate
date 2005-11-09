@@ -1,0 +1,109 @@
+#!/usr/bin/perl 
+
+package main;
+use strict;
+use warnings;
+use Gtk2 -init;
+use Gtk2::GladeXML;
+use Gtk2::SimpleList;
+use Gtk2::Helper;
+use Gnome2;
+use Data::Dumper;
+use Getopt::Long;
+
+my $debug;
+my $uifile="glocate.glade";
+my $myname="glocate";
+my $version="0.1";
+
+my $selected;
+
+sub dmsg{ return "*** DEBUG [$myname]: @_" };
+
+################################
+# Options parsing and settings #
+################################
+
+GetOptions(
+	"debug" => \$debug
+);
+
+my $name=shift;
+die "You must specify a string" unless $name;
+
+#########################################
+# Glade UI loading and application init #
+#########################################
+
+Gnome2::Program->init ($myname, $version);
+my $screen=Gtk2::Gdk::Screen->get_default;
+my $app = Gnome2::App->new ("GLocate/Simple");
+my $gladexml = Gtk2::GladeXML->new($uifile);
+$gladexml->signal_autoconnect_from_package('main');
+my $filelist=$gladexml->get_widget('filelist');
+
+my $filestore=Gtk2::SimpleList->new_from_treeview(
+	$filelist,
+	'File' => 'text'
+#	'Text Field' => 'text'
+);
+my $fh;
+open($fh,"slocate $name |")|| die "Could not open 'slocate' pipe: $!";
+
+my $tag;
+$tag=Gtk2::Helper->add_watch ( fileno($fh), 'in', sub { watcher_callback($fh, $tag) });
+
+Gtk2->main; # Main loop
+warn dmsg "- Exiting" if $debug;
+1;
+
+#############
+# Callbacks #
+#############
+
+sub on_quit1_activate{
+	print "SIGNAL: on_quit1_activate\n";
+	Gtk2->main_quit;
+}
+
+
+sub on_glocate_destroy
+{
+        Gtk2->main_quit;
+	1;
+}
+
+sub gtk_main_quit
+{
+        Gtk2->main_quit;
+	1;
+}
+
+sub on_filelist_row_activated
+{
+	warn dmsg "on_filelist_row_activated entered" if ($debug);
+	$selected="";
+
+}
+
+##################
+
+sub watcher_callback{
+	my $fh=shift;
+	my $tag;
+
+	if (eof($fh)){
+        	warn "ERROR [$myname]: removing watch on $tag";
+                Gtk2::Helper->remove_watch ($tag);
+                close($fh);
+                return 0;
+        } else{
+		warn "*** DEBUG [$myname]: processing fh" if ($debug);
+		my $line=<$fh>;
+		chomp $line;
+		warn dmsg "line=$line" if ($debug);
+		push @{$filestore->{data}},( [ $line ] );
+	}
+
+}
+

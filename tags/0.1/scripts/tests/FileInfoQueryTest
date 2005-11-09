@@ -1,0 +1,54 @@
+#!/usr/bin/perl -I /home/developement/glocate
+
+use strict;
+use FileInfo::Query;
+use Data::Dumper;
+use Getopt::Long;
+
+my $byn=1;
+my ($s,$measure);
+my $ret_name;
+my $debug;
+my $brief=0;
+my $long=1;
+my @nokeys;
+my @keywords=undef;
+my $keywords;
+my @values;
+my $values;
+my $condition;
+
+GetOptions(
+	"keywords=s" => \$keywords,
+	"values=s" => \$values,
+	"condition=s" => \$condition,
+	measure => \$measure,
+	debug => \$debug,
+	brief => \$brief,
+	longlist => \$long
+);
+
+print "Looking for $values\n" if $debug;
+
+@values=split(',',$values);
+if (defined($keywords)){
+	@keywords=split(',',$keywords);
+}
+
+die "You must specify a query.\n" unless @values;
+my $fq=new FileInfo::Query( 
+	values => \@values,
+	condition => $condition,
+	keywords => \@keywords,
+	debug => $debug,
+	measure => $measure
+	) || die "Fatal: could not create search.\n";
+
+print "Query ready to run.\n" if $debug;
+my @ids=$fq->run();
+print "FileInfo returned: @ids\n" if $debug;
+foreach my $id (keys %{$fq->{results}}){
+	print "$fq->{results}->{$id}->{fullpath}\n";
+}
+
+$fq->close();

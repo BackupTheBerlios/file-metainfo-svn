@@ -1,0 +1,320 @@
+#!/usr/bin/perl
+
+package main;
+use strict;
+use lib $ENV{FILEMETAINFO_LIBDIR};
+use Glib qw/TRUE FALSE/;
+use Gtk2 -init;
+use Gtk2::GladeXML;
+use Gtk2::SimpleList;
+use Gnome2;
+use Data::Dumper;
+use Getopt::Long;
+use File::MetaInfo;
+use File::MetaInfo::DB;
+use File::MetaInfo::Utils;
+
+my $debug;
+my $PREFIX 	= '/usr/local';
+my $NAME 	="gnome-metainfo-finder";
+my $VERSION 	="0.01";
+my $uifile=(-d "$PREFIX/" . lc($NAME) ? sprintf('%s/share/%s', $PREFIX, lc($NAME)) : $ENV{FILEMETAINFO_UIDIR}).sprintf('/%s.glade', lc($NAME));
+my $LOCALE_DIR		= (-d $PREFIX ? "PREFIX/share/locale" : $ENV{PWD}.'/locale');
+my $RCFILE		= sprintf('%s/.%src', $ENV{HOME}, lc($NAME));
+
+my $gnome;
+
+my $iconsize=24;
+
+use constant VP_POS1=>260;
+use constant VP_POS2=>24;
+
+sub dmsg{ return "*** DEBUG [$NAME]: @_" };
+
+################################
+# Options parsing and settings #
+################################
+
+GetOptions(
+	"debug+" => \$debug,
+
+);
+
+#########################################
+# Glade UI loading and application init #
+#########################################
+my $mainwidget=$NAME;
+
+my $screen=Gtk2::Gdk::Screen->get_default;
+Gnome2::Program->init ($NAME, $VERSION);
+warn dmsg "Glade File: $uifile" if $debug;
+my $app = Gnome2::App->new ("$NAME/$VERSION");
+my $gladexml = Gtk2::GladeXML->new($uifile);
+my $window=$gladexml->get_widget($mainwidget);
+$gladexml->signal_autoconnect_from_package('main');
+$window->signal_connect('destroy',\&_destroy);
+
+my $crend=Gtk2::CellRendererText->new();
+$crend->set (markup=>1);
+
+use constant KT_C => 0;
+
+# User Keyword Tree Definition
+my $ukwtreeview= $gladexml->get_widget('ukwtree');
+my $ukwtreestore = Gtk2::TreeStore->new(qw/Glib::String/);
+$ukwtreeview->set_model($ukwtreestore);
+$ukwtreeview->insert_column_with_attributes(
+	0,
+	'User Keywords',
+	$crend,
+	markup => 0
+);
+
+sub on_ukwselection_changed;
+$ukwtreeview->get_selection->signal_connect('changed',\&on_ukwselection_changed);
+
+# Meta Keyword Tree Definition
+
+
+my $kwtreeview= $gladexml->get_widget('kwtree');
+my $kwtreestore = Gtk2::TreeStore->new(qw/Glib::String/);
+
+$kwtreeview->set_model($kwtreestore);
+
+$kwtreeview->insert_column_with_attributes(
+	0,
+	'Meta Keywords',
+	$crend,
+	markup => 0
+);
+
+sub on_kwselection_changed;
+$kwtreeview->get_selection->signal_connect('changed',\&on_kwselection_changed);
+
+# FileView Initialization
+
+use constant FV_C_NAME => 0;
+use constant FV_C_FOLDER => 1;
+use constant FV_C_STOCK => 2;
+
+my $fileview= $gladexml->get_widget('fileview');
+my $filestore=Gtk2::ListStore->new(qw/Glib::String Glib::String Gtk2::Gdk::Pixbuf/);
+
+$fileview->set_model($filestore);
+
+my $colpixtext = Gtk2::TreeViewColumn->new;
+$colpixtext->set_title('Name');
+
+my $crendpix = Gtk2::CellRendererPixbuf->new();
+$colpixtext->pack_start($crendpix,FALSE);
+$colpixtext->set_attributes($crendpix, 'pixbuf' => FV_C_STOCK,);
+
+my $crendtxt = Gtk2::CellRendererText->new();
+$colpixtext->pack_start($crendtxt,FALSE);
+$colpixtext->set_attributes($crendtxt, 'text' => FV_C_NAME,);
+
+
+$fileview->append_column($colpixtext);
+
+$fileview->insert_column_with_attributes( 1, 'Folder', $crend, text => FV_C_FOLDER);
+
+
+
+# Keyword Tree Initialization
+
+my $fdb=new File::MetaInfo::DB( debug => ($debug-2) ) || die "Could not open db";
+my $aref=$fdb->list_all_keywords();
+#my $aref=$fdb->list_all_values_for_keyword($File::MetaInfo::UserLabel);
+if ($debug){
+	warn dmsg "@{$aref}";
+}
+
+# Trees Models Initiliazation
+my %kws;
+my %ukws;
+foreach my $e (@{$aref}){
+	Gtk2->main_iteration while (Gtk2->events_pending);
+	${$e}[0] =~ /.*::(.*\..*)$/;
+	next unless $1;
+	my $kw="<b>".$1."</b>";
+	warn dmsg "Element: $kw" if $debug;
+	if ($1 =~ /^User\./){
+		$ukws{$kw}=${$e}[0];
+	}
+	else {
+		if ($1 !~ /^Extract.keywords$/){ #skip the ''index''
+			$kws{$kw}=${$e}[0];
+		}
+	}
+}
+
+add_hash_to_tree($ukwtreestore,\%ukws);
+$ukwtreeview->expand_all();
+add_hash_to_tree($kwtreestore,\%kws);
+
+
+Gtk2->main; # Main loop
+warn dmsg "- Exiting" if $debug;
+1;
+
+#############
+# Callbacks #
+#############
+
+sub _destroy
+{
+	Gtk2->main_iteration while (Gtk2->events_pending);
+        Gtk2->main_quit;
+	1;
+}
+
+sub gtk_main_quit
+{
+	Gtk2->main_iteration while (Gtk2->events_pending);
+        Gtk2->main_quit;
+	1;
+}
+
+sub on_kwtree_row_expanded{
+	 warn dmsg " on_kwtree_row_expanded: @_ - Enter" if $debug;
+
+	 warn dmsg " on_kwtree_row_expanded - Exit" if $debug;
+}
+
+sub on_kwtree_row_activated{
+	on_tree_row_activated(\%kws,@_);
+}
+
+sub on_ukwtree_row_activated{
+	on_tree_row_activated(\%ukws,@_);
+}
+
+sub on_tree_row_activated{
+	my ($hashref,$widget, $path, $column)=@_;
+	warn dmsg " on_tree_row_activated: @_ - Enter" if $debug;
+	warn dmsg " Widget: $widget Path: " . $path->to_string . " Column: " . Dumper($column)  if $debug; 
+
+	populate_fileview(
+			$hashref,
+			$widget->get_model(),
+			$filestore,
+			$widget->get_model()->get_iter($path),
+			$path
+		);
+
+	warn dmsg " on_tree_row_activated - Exit" if $debug;
+}
+
+sub on_ukwselection_changed{
+	warn dmsg " on_ukwselection_changed: @_ - Enter" if $debug;
+	on_treeselection_changed(\%ukws,@_);
+	warn dmsg " on_ukwselection_changed - Exit" if $debug;
+}
+
+sub on_kwselection_changed{
+	warn dmsg " on_kwselection_changed: @_ - Enter" if $debug;
+	on_treeselection_changed(\%kws,@_);
+	warn dmsg " on_kwselection_changed - Exit" if $debug;
+}
+
+sub on_treeselection_changed{
+	my ($hashref,$widget)=@_;
+	warn dmsg " on_treeselection_changed: @_ - Enter" if $debug;
+	my $iter=$widget->get_selected;
+	my ($path)=$widget->get_selected_rows;
+	my $model=$widget->get_tree_view->get_model;
+	my $value;
+	my $kw;
+
+	populate_fileview($hashref,$model,$filestore,$iter,$path);
+
+	warn dmsg " on_treeselection_changed - Exit" if $debug;
+}
+
+sub on_mkwbutton_clicked{
+	warn dmsg " on_mkbutton_clicked: @_ - Enter" if $debug;
+	my $vpaned=$gladexml->get_widget('vpaned');
+	$vpaned->set_position(VP_POS2);
+	warn dmsg " on_mkbutton_clicked - Exit" if $debug;
+}
+
+sub on_ukwbutton_clicked{
+	warn dmsg " on_mkbutton_clicked: @_ - Enter" if $debug;
+	my $vpaned=$gladexml->get_widget('vpaned');
+	$vpaned->set_position(VP_POS1);
+	warn dmsg " on_mkbutton_clicked - Exit" if $debug;
+}
+
+###################
+# Other Functions #
+###################
+
+sub populate_fileview{
+	warn dmsg " populate_fileview: @_ - Enter" if $debug;
+	my ($hashref,$srcmodel,$dstmodel,$srciter,$srcpath)=@_;
+	warn dmsg " SrcIter=$srciter SrcPath=" . $srcpath->to_string  . " Depth=" . $srcpath->get_depth if $debug;
+	my $value;
+	my $kw;
+	if ( $srcpath->get_depth gt 1 ){
+		# selection is a Value
+		$srcpath->up();
+		$value=$srcmodel->get($srciter,KT_C);
+		$kw=$srcmodel->get($srcmodel->get_iter($srcpath),KT_C);
+	}
+	else {
+		# selection is a Keyword name
+		$kw=$srcmodel->get($srciter,KT_C);
+	}
+	warn dmsg " Keyword=" . $hashref->{$kw} . " Value=$value" if $debug;
+	my $aref=$fdb->list_files_by_keyword(undef,$hashref->{$kw},$value);
+	$dstmodel->clear();
+	foreach my $j (@{$aref}){
+		warn dmsg "files matching keyword: " . $j->[0] if ($debug);
+		Gtk2->main_iteration while (Gtk2->events_pending);
+		my $fi=new File::MetaInfo(
+			$j->[0],
+			fileInfoDB=> $fdb,
+			debug => ($debug-1)
+		);
+		$fi->refresh_vfsinfo();
+		my $dstiter=$dstmodel->append();
+
+		my $iconfile=$fi->{vfsinfo}->{'File::MetaInfo::Gnome2VFS.icon_file'};
+                warn dmsg "iconname=" . Dumper($fi->{vfsinfo}->{'File::MetaInfo::Gnome2VFS.icon_name'}) if $debug;
+                warn dmsg "iconfile=" . Dumper($fi->{vfsinfo}->{'File::MetaInfo::Gnome2VFS.icon_file'}) if $debug;
+		my $newpixbuf;
+                if (defined($iconfile)){
+                        warn dmsg "Icon is $iconfile" if $debug;
+                        my $pixbuf = Gtk2::Gdk::Pixbuf->new_from_file($iconfile);
+                        $newpixbuf = $pixbuf->scale_simple($iconsize,$iconsize,'hyper');
+                }
+
+		$dstmodel->set($dstiter,
+			FV_C_NAME,$fi->{filename},
+			FV_C_FOLDER,$fi->{filepath},
+			FV_C_STOCK,$newpixbuf
+		);
+	}
+	warn dmsg " populate_fileview - Exit" if $debug;
+}
+
+
+sub add_hash_to_tree{
+	my $tree=shift;
+	my $href=shift;
+
+	foreach my $k (sort keys %{$href}){
+		Gtk2->main_iteration while (Gtk2->events_pending);
+		my $parent_iter = $tree->append(undef);
+		$tree->set($parent_iter,0,"$k");
+		my $varef=$fdb->list_all_values_for_keyword($href->{$k});
+		foreach my $val (@{$varef}){
+			Gtk2->main_iteration while (Gtk2->events_pending);
+			File::MetaInfo::Utils::normalize_string(\${$val}[0]);
+			warn dmsg "Key: $k Value: @{$val}" if $debug;
+			my $child_iter=$tree->append($parent_iter);
+			$tree->set($child_iter,0,"@{$val}");
+		}
+	}
+}
+

@@ -1,0 +1,5 @@
+echo Starting FileInfoSearchService
+(cd /home/developement/glocate; ./FileInfoSearchService > ~/.FileInfo/logs/FileInfoSearchService.log 2>&1 &)
+echo Starting GUI
+(cd /home/developement/glocate/UI/GFileInfoSearch; ./GFileInfoSearch)
+

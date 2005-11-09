@@ -1,0 +1,148 @@
+#!/usr/bin/perl
+#
+# TODO
+#  * remove the http server and change it with a input pipe
+#  * Change the http server with a domain socket server to receive requests (?)
+#  * Change the named pipe witha a domain socket to send responses (?)
+
+use strict;
+use FileInfo;
+use FileInfo::DB;
+use FileInfo::Query;
+use FileInfo::Service;
+use FileInfo::Service::Request;
+use FileInfo::Service::Response;
+use Data::Dumper;
+use Getopt::Long;
+use Carp;
+use Fcntl;
+use POSIX ":sys_wait_h";
+use POSIX qw(strftime);
+
+our $StartResponseTag='<R%';
+our $EndResponseTag="%R>\n";
+
+my $myname="FileInfoSearchService";
+
+my $debug=0;
+my $nologging;
+my $m;
+
+sub dmsg{ return "*** DEBUG [$myname]: @_ " };
+
+GetOptions(
+	"port=n" => \$port,
+	"debug+" => \$debug,
+	measure => \$m,
+	nologging => \$nologging
+);
+
+sub logmsg { 
+  if (@_){
+    warn "[$myname $$: @_ at ", (strftime "%Y%m%d%H%M%S", localtime), "]\n" ;
+  }
+}
+
+
+my $value;
+my $fis=new FileInfo::Service( debug => $debug) || die "Could not create service\n";
+
+while (1){
+	while (my $req=parse_request($fis->{next_request})) {
+		if ($req->{querytag} eq $StartQueryTag){
+			logmsg "Processing request: " . $req->{querytag} unless $nologging;
+			my $response;
+			my $fq=new FileInfo::Query(
+				keywords => $req->{keywords},
+				clause => $req->{clause},
+				values => $req->{values},
+				debug => $debug,
+				measure => $m
+			);
+
+			if (!defined($fq)){
+				logmsg "ERROR Generating Query";
+				next;
+			}
+			logmsg "DEBUG: Query generated " . Dumper($fq) if $debug;
+			logmsg "Running query" unless $nologging;
+			my $t0=Time::HiRes::time if ($m);
+			my @ids=$fq->run;
+			my $tf=Time::HiRes::time if ($m);
+			if (!defined(@ids)){
+				logmsg "ERROR: no results";
+				next;
+			}
+			logmsg "Query results: @ids" unless $nologging;
+			logmsg "TIMES: search elapsed in " . ($tf - $t0) . " seconds\n" if ($m);
+			logmsg "Generating response" unless $nologging;
+			my $i=1;
+			my $l=keys %{$fq->{results}};
+			foreach my $id (keys %{$fq->{results}}){
+				#warn dmsg Dumper($fq->{results}->{$id});
+				logmsg "Sending response [$i/$l] to pipe";
+				print PIPE create_response($req->{clientid},$fq->{results}->{$id});
+				$i++;
+			}
+			logmsg "done";
+		}
+	}
+	logmsg "Client disconnected";
+	close(PIPEIN);
+}
+
+close(PIPE);
+$fdb->close();
+
+#################
+
+sub parse_request{
+	my $request=shift;
+	my %req;
+
+	chomp $request;
+
+	warn dmsg "parse_request - \'$request\'" if $debug;
+
+	return undef unless defined($request);
+
+	my $values;
+	my $keywords;
+
+	( $req{clientid},
+	  $req{querytag},
+	  $keywords,
+	  $req{clause},
+	  $values,
+	  undef
+	)=split(/[$sep]/,$request);
+	@{$req{keywords}} = split(/,/,$keywords);
+	@{$req{values}} = split(/,/,$values);
+
+	warn dmsg "Request parsed: " . Dumper(\%req) if $debug;
+
+	return \%req;
+}
+
+#
+# Format of response:
+#
+# 	<resposestarttag><sep><responseid><sep><data><responseendtag>
+#
+
+sub create_response{
+	my $id=shift;
+	my $fi=shift;
+	
+	warn dmsg "create_response - id=$id fi=$fi" if $debug;
+	my $name="fiSearchResult";
+	
+	my $response= 	$StartResponseTag . $sep .  
+			$id . $sep .
+			Data::Dumper->Dump([$fi],[$name]) . $sep .
+			$EndResponseTag;
+
+	return $response;
+
+}
+

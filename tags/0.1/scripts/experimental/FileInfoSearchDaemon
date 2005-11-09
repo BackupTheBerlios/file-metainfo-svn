@@ -1,0 +1,165 @@
+#!/usr/bin/perl
+#
+
+use strict;
+use FileInfo;
+use FileInfo::DB;
+use Data::Dumper;
+use Getopt::Long;
+use HTTP::Daemon;
+use HTTP::Status;
+use Carp;
+use POSIX ":sys_wait_h";
+use POSIX qw(strftime);
+
+my $PROGNAME="FileInfoSearchDaemon";
+my $waitedpid = 0;
+
+my $port=9000;
+my $debug;
+my $m;
+
+GetOptions(
+	"port=n" => \$port,
+	"debug" => \$debug,
+	measure => \$m
+);
+
+sub logmsg { 
+  if (@_){
+    warn "[$0 $$: @_ at ", (strftime "%Y%m%d%H%M%S", localtime), "]\n" ;
+  }
+}
+
+sub spawn;
+
+sub REAPER {
+  my $child;
+  while (($waitedpid = waitpid(-1,WNOHANG)) > 0){
+     logmsg "reaped $waitedpid" . ($? ? " with exit $?" : '');
+  }
+  $SIG{CHLD} = \&REAPER;
+}
+
+$SIG{CHLD} = \&REAPER;
+
+my $value;
+
+my $fdb=new FileInfo::DB( debug => $debug) || die "Could not open DB\n";
+my $d= new HTTP::Daemon(
+	LocalPort => $port
+)|| die "Cannot create HTTP Daemon: $@\n";
+print "Please contact me at: <URL:", $d->url, "glocate?[QUERY]>\n";
+my $c;
+for ($waitedpid=0; ($c = ($d->accept)) || $waitedpid; $waitedpid =0 ) {
+	next if $waitedpid and not $c;
+	while (my $r = $c->get_request) {
+		if ($r->method eq 'GET' and $r->url->path eq '/glocate'){
+			spawn sub{
+				$|=1;
+				logmsg "Processing request: " . Dumper($r) if $debug;
+				my $html;
+				open(HTML,'>',\$html);
+				logmsg "Processing request for url: " . $r->url . "\n";
+				$value = $r->url->query;
+				logmsg "DEBUG: value=$value\n" if $debug;
+				if (!defined($value)){
+					print HTML "<HTML>\n";
+					print HTML "<HEAD>\n";
+					print HTML "<TITLE> $PROGNAME Error </TITLE>\n";
+					print HTML '<LINK REL="stylesheet" href="stylesheet.css" />'."\n";
+					print HTML "<BODY>\n";
+					print HTML "Please specify a query\n";
+				print HTML "</BODY>\n";
+				print HTML "</HTML>\n";
+				}
+				else {
+					my $t0=Time::HiRes::time if ($m);
+					my $arrayref=$fdb->search($value);
+					my $tf=Time::HiRes::time if ($m);
+					logmsg "DEBUG: Result " . Dumper($arrayref) if $debug;
+					logmsg "TIMES: search elapsed in " . ($tf - $t0) . " seconds\n" if ($m);
+					logmsg "Generating HTML";
+					print HTML "<HTML>\n";
+					print HTML "<HEAD>\n";
+					print HTML "<TITLE> Search results for $value </TITLE>\n";
+					print HTML '<LINK REL="stylesheet" href="stylesheet.css" />'."\n";
+					print HTML "<BODY>\n";
+					foreach (@$arrayref){
+						logmsg "DEBUG: $$_[0]\n" if $debug;
+						my $fi=new FileInfo(
+		 					$$_[0],
+	 	 					fileInfoDB => $fdb) || die "Could not instantiate FileInfo: $@\n";
+						logmsg "Obtaining FileInfo for " . $fi->{url} . "\n";
+						print HTML "<P/>\n";
+						print HTML '<A HREF="' . $fi->{url} . '">' . $fi->{filename} . "</A>\n";
+						my $s=$fi->changed();
+			                	if ( $s ne 0){
+                        				print HTML "<BR><FONT COLOR='red'> WARNING: File has been modified. ";
+                        				print HTML "Info are outdated by $s seconds." if ($s gt 0);
+                        				print HTML "File has been (re)moved." if ($s lt 0);
+                        				print HTML "</FONT><BR>";
+                				}
+						print HTML "<TABLE>\n";
+						my $h=$fi->{keywords};
+						foreach my $k (sort(keys %$h)){
+							print HTML "<TR>\n";
+							print HTML "\t<TD><B>" . $k . "</B></TD>\n";
+							foreach my $e (@{$h->{$k}}){
+								print HTML "\t<TD>" . $e . "</TD>\n";
+							}
+							print HTML "</TR>\n";
+						}
+						print HTML "</TABLE>\n";
+						undef($fi);
+					}
+					print HTML "</BODY>\n";
+					print HTML "</HTML>\n";
+		    			logmsg "Finished HTML generation ";
+				}
+				print HTML"\r\n";
+				close (HTML);
+				logmsg "Creating response ";
+				my $response=HTTP::Response->new(200,undef,undef,$html)|| die "Error: Cannot create response $!";
+				logmsg "Sending response ";
+				$c->send_response($response) || die "Error: Cannot send response $!\n";
+			}
+		}
+		elsif ($r->method eq 'GET' and $r->url->path eq "/stylesheet.css") {
+			spawn sub{
+                		$c->send_file_response("stylesheet.css") || die "Error: $!";
+			}
+		}
+		else {
+			spawn sub{
+                     		$c->send_error(RC_FORBIDDEN);
+			}
+                }
+	}
+	$c->close();
+	undef($c);
+	warn "Request processed\n";
+}
+$fdb->close();
+
+sub spawn{
+  my $coderef = shift;
+  unless (@_ == 0 && $coderef && ref($coderef) eq 'CODE') {
+    confess "usage: spawn CODEREF";
+  }
+
+  my $pid;
+  if (!defined($pid = fork)) {
+    logmsg "cannot fork: $!";
+    return;
+  } elsif ($pid) {
+    logmsg "begat $pid ";
+    return; # I'm the parent
+  }
+  # else I'm the child -- go spawn
+
+  #open(STDIN,  "<&Client")   || die "can't dup client to stdin";
+  #open(STDOUT, ">&Client")   || die "can't dup client to stdout";
+  ## open(STDERR, ">&STDOUT") || die "can't dup stdout to stderr";
+  exit &$coderef();
+}

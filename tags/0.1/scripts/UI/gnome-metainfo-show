@@ -1,0 +1,81 @@
+#!/usr/bin/perl
+#
+package main;
+use strict;
+use lib $ENV{FILEMETAINFO_LIBDIR};
+use Gtk2 -init;
+use Gtk2::GladeXML;
+use Gtk2::SimpleList;
+use Gnome2;
+use Data::Dumper;
+use Getopt::Long;
+use File::MetaInfo;
+
+our $NAME='gnome-metainfo-show';
+our $VERSION='0.1';
+
+my $debug;
+my $uidir=$ENV{FILEMETAINFO_UIDIR};
+my $ui=$uidir."/$NAME.glade";
+
+GetOptions(
+	"debug" => \$debug
+);
+
+my $filename=shift;
+
+if (!defined($filename)){
+        warn "Usage: $0 [-d] filename\n";
+        die "Missing filename\n";
+}
+
+Gnome2::Program->init ("$NAME", "$VERSION");
+my $screen=Gtk2::Gdk::Screen->get_default;
+my $app = Gnome2::App->new ("$NAME");
+my $gladexml = Gtk2::GladeXML->new($ui);
+$gladexml->signal_autoconnect_from_package('main');
+
+my $window=$gladexml->get_widget('fileinfo-pad');
+
+my $slist=Gtk2::SimpleList->new_from_treeview(
+	$gladexml->get_widget('properties'),
+	"Uno" => 'text',
+	"Due" => 'text'
+);
+
+warn Dumper($slist) if $debug;
+
+my $fi=new File::MetaInfo(
+                $filename,
+                debug=>0
+);
+
+my $ar=$fi->get_values();
+
+print Dumper($ar) if $debug;
+
+foreach my $k (@$ar){
+	warn "$k->[0] $k->[1]\n" if $debug;
+	push @{$slist->{data}}, [ $k->[0], $k->[1] ];
+}
+
+Gtk2->main;
+warn "I'm here\n" if $debug;
+1;
+
+sub on_quit1_activate{
+	print "SIGNAL: on_quit1_activate\n";
+	Gtk2->main_quit;
+}
+
+
+sub on_queryentry_changed{
+	print "SIGNAL: on_queryentry_changed\n";
+}
+
+sub gtk_main_quit
+{
+	print "SIGNAL: gtk_main_quit\n";
+        Gtk2->main_quit;
+}
+

@@ -1,0 +1,12 @@
+TODO list for Perl module FileInfo
+
+- Nothing yet
+
+   * PRIORITY - DESCRIPTION
+   * H - Documentation
+   * M - Make it a perl bundle.
+   * L - WebDAV UI
+   * H - GTK Search GUI: 50%
+   * M3 - GTK Browse GUI
+   * M2 - Support for rating of files
+   * M1 - Scripts for nautilus to query/show info and add labels/keywords/rating to files

@@ -1,0 +1,52 @@
+#!/usr/bin/perl
+
+use strict;
+use FileInfo;
+use Cwd qw(getcwd abs_path);
+use Getopt::Long;
+use Carp;
+use File::Basename;
+
+my $debug;
+my $sep=':';
+my $cwd=getcwd;
+my @dirs;
+
+GetOptions(
+	"debug" => \$debug,
+	"separator=s" => \$sep
+);
+
+print "DEBUG: @ARGV, $#ARGV\n" if $debug;
+
+if ($#ARGV==-1){
+	push @dirs, $cwd;
+}
+else{
+	@dirs=@ARGV;
+}
+
+foreach (@dirs){
+	warn "DEBIG: cwd=$_\n" if $debug;
+	opendir (CWD,$_) || die "FATAL: $!\n";
+	my $element;
+        while ($element=readdir(CWD)){
+		if ($element !~ /^\.(\.)*$/){
+			warn "DEBUG: $element\n" if $debug;
+			my $afn=abs_path("$_/$element");
+			warn "DEBUG: absolute_filename=$afn\n" if $debug;
+			my $fi = new FileInfo($afn, debug => $debug);
+			warn "DEBUG: $afn fileid=$fi->{id}\n" if ($debug);
+			my ($b,$n,$x)=fileparse($element);
+			my $ls=`ls -1 --color=yes $_/$element`;
+			#chomp $ls;
+			#print "$ls";
+			print "$element\t";
+			$fi->print_labels($sep);
+			print "\n";
+		}
+	}
+	close (CWD);
+}
+
+

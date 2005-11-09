@@ -1,0 +1,27 @@
+#!/usr/bin/perl
+
+use Cwd 'abs_path';
+use FileInfo;
+use Getopt::Long;
+use Carp;
+my $debug;
+my $ltype='FileInfo::User.labels';
+
+GetOptions(
+	"debug" => \$debug,
+	"type=s" => \$ltype
+);
+
+my $fn=shift;
+
+my $fi=new FileInfo(
+                $fn,
+                debug=>$debug
+        );
+
+
+warn "DEBUG: labels=@ARGV\n" if $debug;
+foreach my $label(@ARGV){
+	my $ret=$fi->add_keyword($ltype,$label); 
+	print "Addedd keyword $ltype=$label ($ret)\n";
+}

@@ -1,0 +1,141 @@
+#!/usr/bin/perl 
+
+use strict;
+use lib $ENV{FILEMETAINFO_LIBDIR};
+use Cwd qw(abs_path);
+use Getopt::Long;
+use Carp;
+use File::Basename;
+use File::Find;
+use File::MetaInfo::DB;
+use File::MetaInfo;
+use Time::HiRes;
+use Data::Dumper;
+
+my $NAME="MetaInfoUpdateDB";
+
+my $debug;
+my $measure;
+my $basedir;
+my @filelist;
+my $step=1000;
+my $ret;
+my $daemon;
+my $cdrom;
+my $volname;
+my $cddev;
+my $mpoint;
+my $mounted;
+my $volid=undef;
+my $exclude;
+my %excl;
+my $exp;
+my $verbose;
+my $quiet;
+my $force;
+my ($a,$u,$s)=(0,0,0);
+my $i=0;
+
+
+GetOptions(
+	"debug+" => \$debug,
+	"measure" => \$measure,
+	"step=n" => \$step,
+	"cdrom" => \$cdrom,
+	"verbose" => \$verbose,
+	"volume-name=s" => \$volname,
+	"exclude-list=s" => \$exclude,
+	"exclude-pattern=s" => \$exp,
+	"quiet" => \$quiet,
+	"force" => \$force
+);
+print "DEBUG Level: $debug\n" if $debug;
+my $fdb=new File::MetaInfo::DB( debug=> ($debug-2));
+
+my $t0=Time::HiRes::time;
+
+if ($#ARGV lt 0){
+	die "You must specify at least one directory to start indexing\n";
+}
+
+foreach $basedir (@ARGV){
+
+	$basedir || die "FATAL: You must specify a directory tree to add to the File::MetaInfo::DB";
+
+	if ($cdrom){
+		$volname || die "Fatal: You should specify a volume name";
+		use VolumeInfo::CD;
+		$cddev=VolumeInfo::CD::device($basedir);
+		$mpoint=VolumeInfo::CD::mount_point($cddev);
+		$mounted=VolumeInfo::CD::is_mounted($cddev);
+		if (!$mounted){
+			`mount $mpoint`;
+			$mounted=VolumeInfo::CD::is_mounted($cddev);
+			die "Fatal: Could not mount device $cddev" unless ($mounted eq 1);
+		}
+		my ($id,$last,$lenght,$toc)=VolumeInfo::CD::get_discids($cddev);
+		$volid="$id-$last-$lenght";
+		$fdb->add_volume($volid,$volname) || warn "Warning: Could not add volume $@";
+	}
+	
+	if (defined($exclude)){
+		my @list=split(/[, \n]/,$exclude);
+		foreach (@list){
+			$excl{$_}=1;
+		}
+	}
+
+	$basedir=abs_path($basedir);
+	warn "DEBUG: basedir=$basedir\n" if $debug;
+	print "\nImporting $basedir\n";
+	find(\&add_it, $basedir, $volid);
+	$fdb->commit();
+}
+print "\nProcessed $i files. ";
+my $tf=Time::HiRes::time;
+my $time=($tf - $t0);
+print "\nDone: processed $i files in: $time \n";
+print "Filename: " . $fdb->get_dbfilename() . "\n";
+print "Addedd: $a\n";
+print "Updated: $u\n";
+print "Skipped: $s\n";
+$fdb->close();
+
+
+#############
+#
+sub add_it{
+	warn "DEBUG: main::add_it::filename=$File::Find::name - @_\n" if $debug;
+	my $fn=$File::Find::name;
+	print "$fn->" if $verbose;
+	if (defined($excl{$fn}) || (defined($exp) and $fn =~ /$exp/) ){
+		print "S" if (!defined($quiet));
+		$s++;
+		print "\n" if $verbose;
+		return;
+	}
+
+	$fdb->begin_work() if (($i % $step) eq 0);
+	my $finfo=new File::MetaInfo(
+			$fn,
+			fileInfoDB=>$fdb,
+			volumeid=>$volid,
+			excludeKeywords=>"File::MetaInfo::Plugins::Extract.filename",
+			debug=>($debug-1)
+			) || die;
+	print "." if (!defined($quiet));
+	if($finfo->{fresh}){
+		print "\bA" if (!defined($quiet));
+		$a++;
+	}
+	elsif($finfo->changed() || defined($force)){
+		$finfo->update();
+		print "\bU" if (!defined($quiet));
+		$u++;
+	}
+	$i++;
+	$fdb->commit() if (($i % $step) eq 0);
+	print "c" if (($i % $step) eq 0) and (!defined($quiet));
+	print "\n" if $verbose
+}
+

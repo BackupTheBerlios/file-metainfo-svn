@@ -1,0 +1,298 @@
+#!/usr/bin/perl 
+#
+package main;
+use strict;
+use lib $ENV{FILEMETAINFO_LIBDIR};
+use Glib qw(TRUE FALSE);
+use Gtk2 -init;
+use Gtk2::GladeXML;
+use Gtk2::SimpleList;
+use Gtk2::Helper;
+use Gnome2;
+use Data::Dumper;
+use Getopt::Long;
+use File::MetaInfo;
+use File::MetaInfo::Query;
+#use File::MetaInfo::DB;
+use File::MetaInfo::ServiceClient;
+use POSIX qw(strftime);
+
+my $myname="GFile::MetaInfoSearch";
+
+my $debug=0;
+my $uifilepath="/home/developement/glocate/UI/GFile::MetaInfo";
+my $padui="gfileinfo.glade";
+my $appui="gfileinfosearch.glade";
+my $port=9000;
+my $server="localhost";
+my $buffer="";
+my @infos=(
+	"id",
+	"filename",
+	"filepath"
+);
+my @keywords=(
+	"File::MetaInfo::Plugins::MimeType.mimetype",
+	"File::MetaInfo::Plugins::Extract.title",
+	"File::MetaInfo::Plugins::Extract.author"
+);
+
+my @vfsinfos=(
+	"File::MetaInfo::Gnome2VFS.mtime",
+	"File::MetaInfo::Gnome2VFS.size",
+);
+
+
+my $default_keyword=$File::MetaInfo::UserLabel;
+my $default_condition=$File::MetaInfo::Query::equal;
+
+GetOptions(
+	"debug+" => \$debug,
+	"port=n" => \$port,
+	"server=s" => \$server,
+);
+
+sub dmsg{ return "*** DEBUG [$myname]: @_" }
+
+my $url="http://$server:$port/glocate";
+
+my @fi;  # This is required by the web service;
+my $fisc;
+
+# Init app
+Gnome2::Program->init ("GFile::MetaInfoSearch", "0.1");
+my $screen=Gtk2::Gdk::Screen->get_default;
+my $app = Gnome2::App->new ("GFile::MetaInfoSearch/Simple");
+# Load app widgets
+my $appglade = Gtk2::GladeXML->new("$uifilepath/$appui");
+$appglade->signal_autoconnect_from_package('main');
+
+my $entryKeyword=$appglade->get_widget('entryKeyword');
+my $textInfo=$appglade->get_widget('textInfo');
+my $resultvbox=$appglade->get_widget('resultvbox');
+my $keywordslabel=$appglade->get_widget('keywordslabel');
+my $conditioncombo=$appglade->get_widget('conditioncombo');
+my $kwtreeview=$appglade->get_widget('kwtreeview');
+
+$conditioncombo->set_active(0);
+$keywordslabel->set_label($default_keyword);
+my $liststore=Gtk2::SimpleList->new_from_treeview (
+		$kwtreeview,
+                'Bool Field'    => 'bool',
+                'Text Field'    => 'text',
+);
+
+my $fdb=new File::MetaInfo::DB( debug => $debug ) || die "Could not open db";
+my $aref=$fdb->list_all_keywords();
+warn dmsg Dumper($aref);
+foreach my $kw (@{$aref}){
+	warn dmsg "keywords=" . $kw->[0];
+	my $status=FALSE;
+	$status=TRUE if ($kw-[0] eq $keywordslabel->get_label());
+	push @{$liststore->{data}},( [ FALSE, $kw->[0] ],);
+}
+
+
+Gtk2->main;
+warn "I'm done\n" if $debug;
+1;
+
+$fdb->close();
+
+#
+
+sub on_GFileInfoSearch_destroy{
+	warn "SIGNAL: on_GFileInfoSearch_destroy" if $debug;
+	Gtk2->main_quit;
+	1;
+}
+
+sub gtk_main_quit
+{
+	warn "SIGNAL: gtk_main_quit" if $debug;
+        Gtk2->main_quit;
+	1;
+}
+
+sub on_entryKeyword{
+	warn "SIGNAL: on_entryKeyword_editing_done" if $debug;
+	my ($widget, $data) = @_;
+	warn Dumper($widget,$data) if $debug;
+	my $kword=$widget->get_text();
+	warn "entryKeyword=$kword" if $debug;
+	fire_search($kword);
+}
+
+sub on_buttonFind_clicked{
+	warn "SIGNAL: on_buttonFind_clicked" if $debug;
+	my ($widget, $data) = @_;
+	warn Dumper($widget,$data) if $debug;
+	my $kword=$data->get_text();
+	warn "entryKeyword=$kword" if $debug;
+	#fire_search($kword);
+}
+
+sub fire_search{
+	warn "DEBUG: fire_search entered" if $debug;
+	warn "DEBUG: " . Dumper(\@_) if $debug;
+	my $kword=shift;
+	warn "DEBUG: search started" if $debug;
+	#my $arrayref=$fdb->search($kword);
+	clean_fileinfo();
+	if (!defined($fisc)){
+		# Init the client
+		$fisc=new File::MetaInfo::ServiceClient(debug=> $debug);
+		# install a read watcher for this pipe
+		my $tag;
+		$tag = Gtk2::Helper->add_watch ( fileno($fisc->{_responsepipefh}), 'in', sub {
+    		watcher_callback( $fisc->{_responsepipefh}, $tag ) });
+	}
+
+	#if (!defined(
+
+	my $res=$fisc->send($kword);
+	if ($res eq 0){
+		warn "*** DEBUG: request accepted ***" if $debug;
+	}
+	else {
+		warn "ERRROR: request not accepted"
+	}
+
+	warn "DEBUG: search request ended" if $debug;
+	#my $tb=new Gtk2::TextBuffer;
+	#foreach (@$arrayref){
+	#my $fi=new FileInfo(
+	#$$_[0],
+	#fileInfoDB => $fdb,
+	#debug => $debug
+	#) || warn "Could not instantiate FileInfo: $@\n";
+	#$tb->insert_at_cursor($fi->{url} . "\n");
+	#$textInfo->set_buffer($tb);
+	#}
+}
+
+sub watcher_callback {
+	warn "*** DEBUG [$myname]: watcher_callback - Enter" if $debug;
+	#warn "*** DEBUG: " . Dumper(\@_) if $debug;
+	my ($fh, $tag) = @_;
+
+	# we safely can read a chunk into $buffer
+
+	if (eof($fh)){
+		warn "ERROR [$myname]: removing watch on $tag"; 
+		Gtk2::Helper->remove_watch ($tag);
+		close($fh);
+		return 0;
+	} else{
+		warn "*** DEBUG [$myname]: processing fh" if ($debug);
+		#my $oldsep=$/;
+		#$/="";
+		my $line=<$fh>;
+		chomp $line;
+		warn "*** DEBUG [$myname]: line=\"$line\" read" if ($debug gt 1);
+		if ($line !~ /^$/ ){
+			warn "*** DEBUG [$myname]: joining buffer" if ($debug gt 1);
+			$buffer=$buffer . "\n" . $line;
+		}
+		else {
+			warn "*** DEBUG [$myname]: parsing buffer" if ($debug gt 1);
+			warn "*** DEBUG [$myname]: $buffer" if ($debug gt 1);
+			show_fileinfo($buffer);
+			$buffer=undef;
+		}
+		#eval {$line};
+		#warn "*** DEBUG [$myname]: FileInfo array " . Dumper(\@fi) if ($debug);
+		#$/=$oldsep;
+	}
+	warn "*** DEBUG [$myname]: watcher_callback - Exit" if $debug;
+	return 1
+}
+
+sub clean_fileinfo{
+	warn dmsg "clean_fileinfo - Enter" if $debug;
+	my @children=$resultvbox->get_children;
+	warn dmsg "Children: @children";
+	foreach my $child (@children){
+		$resultvbox->remove($child);
+	}
+	warn dmsg "clean_fileinfo - Exit" if $debug;
+}
+
+sub show_fileinfo{
+	warn dmsg "show_fileinfo - Enter" if $debug;
+	my $buffer=shift;
+	my $lfi=$fisc->parse_result($buffer);
+	return undef unless defined $lfi;
+	#$lfi->{debug}=$debug;
+	my $padframe = Gtk2::Frame->new();
+	my $padlabel = Gtk2::Label->new();
+	$padlabel->set_use_markup(1);
+	$padlabel->set_justify('left');
+	$padframe->set_label_widget($padlabel);
+	my $padhbox = Gtk2::HBox->new(0,10);
+	$padhbox->set_homogeneous(0);
+	$padhbox->set_border_width(3);
+	my $padicon = Gtk2::Image->new_from_stock('gtk-dialog-question','dialog');
+	$padicon->set_size_request(144,-1);
+	my $padscroller= Gtk2::ScrolledWindow->new;
+	my $padprop=Gtk2::SimpleList->new(
+		"Property" => 'text',
+		"Value" => 'text',
+	);
+	$padprop->set_headers_visible(0);
+	$padscroller->set_policy('never','never');
+	$padscroller->add($padprop);
+	$padhbox->pack_start($padicon,0,1,0);
+	$padhbox->pack_start($padscroller,1,1,0);
+	$padframe->add($padhbox);
+	$resultvbox->pack_start_defaults($padframe);
+	
+	$lfi->refresh_vfsinfo;
+	if ($lfi->{vfsinfo_lastrefresh}){
+		warn dmsg "FileInfo has VFS info";
+		#warn dmsg Dumper($lfi) if ($debug);
+		my $iconfile=$lfi->{vfsinfo}->{'FileInfo::Gnome2VFS.icon_file'};
+		warn dmsg "iconname=" . Dumper($lfi->{vfsinfo}->{'FileInfo::Gnome2VFS.icon_name'}) if $debug;
+		warn dmsg "iconfile=" . Dumper($lfi->{vfsinfo}->{'FileInfo::Gnome2VFS.icon_file'}) if $debug;
+		if (defined($iconfile)){
+			warn dmsg "Icon is $iconfile" if $debug;
+			my $pixbuf = Gtk2::Gdk::Pixbuf->new_from_file ($iconfile);
+			my $newpixbuf = $pixbuf->scale_simple(64,64,'nearest');
+			$padicon->set_from_pixbuf($newpixbuf);
+		}else{
+			warn dmsg "No icon for " . $lfi->{fullpath}  if $debug;
+		}
+	}
+
+	$padlabel->set_markup("<b>".$lfi->{filename}."</b>");
+	
+	# Show Info
+	foreach my $k (@infos){
+		push @{$padprop->{data}}, [ $k, $lfi->{$k} ];
+	}
+	
+	# Show Keywords
+	foreach my $k (@keywords){
+		if (defined($lfi->{keywords}->{$k})){
+			push @{$padprop->{data}}, [ $k, join(" ",@{$lfi->{keywords}->{$k}}) ];
+		}
+	}
+
+	# Show VFS Infos
+	foreach my $k (@vfsinfos){
+		my $v;
+		warn $k;
+		if ($k =~ /.mtime$/ or $k =~ /.ctime$/){
+			$v=(strftime "%d/%m/%Y %H:%M:%S", localtime($lfi->{vfsinfo}->{$k}));
+		}
+		else{
+			$v=$lfi->{vfsinfo}->{$k};
+		}
+		push @{$padprop->{data}}, [ $k, $v ];
+	}
+
+	push @{$padprop->{data}}, [ "Application", $lfi->{vfsinfo}->{'File::MetaInfo::Gnome2VFS.applications_list'}->{name} ];
+
+	$resultvbox->show_all();
+	warn dmsg "show_fileinfo - Exit" if $debug;
+}
