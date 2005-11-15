@@ -14,13 +14,6 @@ our $UserLabel;
 our $LabelledStatus;
 our $KeywordStatus;
 
-#$AutoLabel='A';
-#$UserLabel='U';
-#$LabelledStatus=3;
-#$KeywordStatus=5;
-
-#my @StatusFlags=( $LabelledStatus, $KeywordStatus );
-
 our $defaultlocation="$ENV{HOME}/.File-MetaInfo/File-MetaInfo.db";
 my $db=$defaultlocation;
 

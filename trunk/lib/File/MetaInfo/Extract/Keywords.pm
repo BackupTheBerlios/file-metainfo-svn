@@ -9,7 +9,7 @@ use File::MetaInfo::Utils;
 #use AutoLoader;
 #
 my $packname = __PACKAGE__;
-my $keywords_name="File::MetaInfo::Extract.keywords";
+#my $keywords_name="File::MetaInfo::Extract.keywords";
 
 my @_extract_keywords;
 
@@ -25,9 +25,7 @@ sub new{
 	$self{cmd}="/usr/bin/extract";
 	$self{debug}=0;
 	$self{filename}=$filename;
-	$self{cfg_ignorekeywords}=(
-		"filename"
-	);
+	$self{cfg_ignorekeywords}=qq{filename};
 	if ((! -r $filename) || (! -s $filename) ){
 		$@='File read error';
 		return undef;
@@ -49,6 +47,7 @@ sub extract{
 		chomp $l;
 		my ($key,$val)=split(/ - /,$l);
 		my $oldkey=$key;
+		next if ($self->{cfg_ignorekeywords} =~ /$key/);
 		$key=$packname . '.' . $key;
 		if (defined($val) && ($val !~ /^$/) && defined($key) && ($self->{exclude} !~ /$key/)){
 			if ($oldkey =~ /date/){
@@ -60,7 +59,7 @@ sub extract{
 			File::MetaInfo::Utils::normalize_string(\$val);
 			my @vals=split(/ /,$val);
 			push @{$hash{$key}},$val;
-			push @{$hash{$keywords_name}},@vals;
+			#push @{$hash{$keywords_name}},@vals;
 			warn "extract: key=$key\tval=" . join(',',@{$hash{$key}}) . "\n" if ($self->{debug});
 		}
 	}

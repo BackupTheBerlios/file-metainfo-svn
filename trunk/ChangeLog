@@ -1,0 +1,220 @@
+2005-11-08 17:23  brx
+
+	* lib/File/MetaInfo.pm, lib/File/MetaInfo/DB.pm,
+	  scripts/MetaInfoSearch: Cleanup of MetaInfoSearch
+
+2005-11-08 09:11  brx
+
+	* scripts/UI/gnome-metainfo-finder,
+	  scripts/UI/gnome-metainfo-show: Bug fix
+
+2005-11-05 14:40  brx
+
+	* glade/gfileinfo.glade, glade/gfileinfo.gladep,
+	  glade/gnome-metainfo-show.glade,
+	  glade/gnome-metainfo-show.gladep, scripts/UI/GFileInfoSearch,
+	  scripts/UI/gfileinfo, scripts/UI/glocate,
+	  scripts/UI/gnome-metainfo-show,
+	  scripts/outdated/GFileInfoSearch, scripts/outdated/glocate:
+	  Renamed gfileinfo to gnome-metainfo-show
+
+2005-11-05 14:33  brx
+
+	* glade/gfileinfoaddlabel.glade, glade/gfileinfoaddlabel.gladep,
+	  glade/gnome-metainfo-add.glade, glade/gnome-metainfo-add.gladep,
+	  scripts/UI/GFileInfoAddLabel, scripts/UI/GFileInfoSearch,
+	  scripts/UI/gnome-metainfo-add, scripts/UI/gnome-metainfo-finder,
+	  scripts/setup.sh: Renamed GFileInfoAddLavel to gnome-metainfo-add
+
+2005-11-05 14:07  brx
+
+	* README, glade/gbrowser.glade, glade/gbrowser.gladep,
+	  glade/gnome-metainfo-finder.glade,
+	  glade/gnome-metainfo-finder.gladep, lib/File/MetaInfo.pm,
+	  lib/File/MetaInfo/Extract.pm,
+	  lib/File/MetaInfo/Extract/Keywords.pm, lib/FileInfo,
+	  scripts/UI/GBrowser.pl, scripts/UI/gnome-metainfo-finder,
+	  scripts/setup.sh: Renamed GBrowser to gnome-metainfo-finder
+
+2005-11-03 13:57  brx
+
+	* scripts/UI/GBrowser, scripts/UI/GFileInfo, scripts/UI/test:
+	  Reworking on repository sctructure, moved UI files
+
+2005-11-03 11:47  brx
+
+	* scripts/UI/GBrowser.pl, scripts/UI/GBrowser/GBrowser.pl,
+	  scripts/UI/GFileInfo/GFileInfoAddLabel,
+	  scripts/UI/GFileInfo/GFileInfoSearch,
+	  scripts/UI/GFileInfo/gfileinfo,
+	  scripts/UI/GFileInfo/gfileinfo.gladep,
+	  scripts/UI/GFileInfo/glocate, scripts/UI/GFileInfoAddLabel,
+	  scripts/UI/GFileInfoSearch, scripts/UI/gfileinfo,
+	  scripts/UI/glocate: Repository reworking
+
+2005-11-03 11:40  brx
+
+	* scripts/tests/glocate.prj, scripts/tests/gnome-mime-query,
+	  scripts/tests/gnome-mime-query.c,
+	  scripts/tests/gnome-stock-icons-list,
+	  scripts/tests/gnome-test.glade,
+	  scripts/tests/gnome2-icon-file.pl,
+	  scripts/tests/gnome2-mime-test.pl,
+	  scripts/tests/gnome2-vfs-test.pl,
+	  scripts/tests/gnome2-vfs-theme-test.pl,
+	  scripts/tests/gtk-optionmenu-test.pl,
+	  scripts/tests/gtk-treeview-list-test.pl,
+	  scripts/tests/gtk-treeview-test.pl,
+	  scripts/tests/gtk-widget-test.pl, scripts/tests/runglade.pl,
+	  scripts/tests/test: Repository reworking
+
+2005-11-03 11:38  brx
+
+	* scripts/FileInfo-Keyword-Extract-test.pl,
+	  scripts/FileInfoQueryTest, scripts/FileInfoSearch,
+	  scripts/MetaInfoSearch, scripts/MetaInfoUpdateDB,
+	  scripts/MetaInfoUpdateDB.pl, scripts/UI/GBrowser/GBrowser.pl,
+	  scripts/UI/test/glocate.prj, scripts/UI/test/gnome-mime-query,
+	  scripts/UI/test/gnome-mime-query.c,
+	  scripts/UI/test/gnome-stock-icons-list,
+	  scripts/UI/test/gnome-test.glade,
+	  scripts/UI/test/gnome2-icon-file.pl,
+	  scripts/UI/test/gnome2-mime-test.pl,
+	  scripts/UI/test/gnome2-vfs-test.pl,
+	  scripts/UI/test/gnome2-vfs-theme-test.pl,
+	  scripts/UI/test/gtk-optionmenu-test.pl,
+	  scripts/UI/test/gtk-treeview-list-test.pl,
+	  scripts/UI/test/gtk-treeview-test.pl,
+	  scripts/UI/test/gtk-widget-test.pl, scripts/UI/test/runglade.pl,
+	  scripts/import_cdrom.pl, scripts/import_tree_old.pl,
+	  scripts/outdated/import_cdrom.pl,
+	  scripts/outdated/import_tree_old.pl,
+	  scripts/register-plugins.sh, scripts/setenv.sh,
+	  scripts/setup.sh, scripts/sqlite-test.pl,
+	  scripts/test-normalize.pl,
+	  scripts/tests/FileInfo-Keyword-Extract-test.pl,
+	  scripts/tests/FileInfoQueryTest, scripts/tests/sqlite-test.pl,
+	  scripts/tests/test, scripts/tests/test-normalize.pl: Repository
+	  reworking and making instructions
+
+2005-11-02 13:37  brx
+
+	* lib/File/MetaInfo.pm, lib/File/MetaInfo/DB.pm,
+	  lib/File/MetaInfo/Extract.pm,
+	  lib/File/MetaInfo/Extract/Extract.pm,
+	  lib/File/MetaInfo/Extract/Keywords.pm,
+	  lib/File/MetaInfo/Modules, lib/File/MetaInfo/Query.pm,
+	  lib/File/MetaInfo/README, lib/File/MetaInfo/Search.pm,
+	  lib/File/MetaInfo/Service, lib/File/MetaInfo/Service.pm,
+	  lib/File/MetaInfo/Service/Request.pm,
+	  lib/File/MetaInfo/Service/Response.pm,
+	  lib/File/MetaInfo/ServiceClient.pm, lib/File/MetaInfo/Shell.pm,
+	  lib/File/MetaInfo/Utils.pm, lib/FileInfo/Modules,
+	  lib/FileInfo/Query.pm, lib/FileInfo/README,
+	  lib/FileInfo/Search.pm, lib/FileInfo/Service,
+	  lib/FileInfo/Service.pm, lib/FileInfo/ServiceClient.pm,
+	  lib/FileInfo/Shell.pm, lib/FileInfo/Utils.pm,
+	  scripts/FileInfoUpdateDB.pl, scripts/MetaInfoUpdateDB.pl,
+	  scripts/UI/GFileInfo/GFileInfoAddLabel, scripts/db_dump.sh,
+	  scripts/extractor.pl, scripts/outdated/extractor.pl,
+	  scripts/register-plugins.sh, scripts/setenv.sh: Changing
+	  packages namespace, fixing scripts
+
+2005-10-30 10:34  brx
+
+	* lib/File/MetaInfo/Extract, lib/File/MetaInfo/Extract.pm,
+	  lib/File/MetaInfo/Extractor, lib/File/MetaInfo/Extractor.pm:
+	  Moved some files
+
+2005-10-28 16:21  brx
+
+	* lib/File, lib/File/MetaInfo, lib/File/MetaInfo.pm,
+	  lib/File/MetaInfo/DB.pm, lib/File/MetaInfo/Extractor,
+	  lib/File/MetaInfo/Extractor.pm,
+	  lib/File/MetaInfo/Extractor/Extract.pm,
+	  lib/File/MetaInfo/Extractor/MD5.pm,
+	  lib/File/MetaInfo/Extractor/MimeType.pm,
+	  lib/File/MetaInfo/Extractor/Nautilus.pm, lib/FileInfo.pm,
+	  lib/FileInfo/DB.pm, lib/FileInfo/Plugins,
+	  lib/FileInfo/Plugins.pm: Moving and renaming modules
+
+2005-10-28 07:20  brx
+
+	* glade, glade/gbrowser.glade, glade/gbrowser.gladep,
+	  glade/gfileinfo.glade, glade/gfileinfo.gladep,
+	  glade/gfileinfoaddlabel.glade, glade/gfileinfoaddlabel.gladep,
+	  glade/gfileinfosearch.glade, glade/gfileinfosearch.gladep,
+	  glade/glocate.glade, glade/glocate.gladep,
+	  glade/gnome-test.gladep, scripts/outdated, scripts/tests: Addedd
+	  glade files
+
+2005-10-27 16:34  brx
+
+	* scripts/experimental, scripts/old: Moved some files
+
+2005-10-27 16:32  brx
+
+	* scripts/FileInfoSearchClient, scripts/FileInfoSearchDaemon,
+	  scripts/FileInfoSearchService, scripts/FileInfoSearchService.v0,
+	  scripts/old, scripts/old/FileInfoSearchClient,
+	  scripts/old/FileInfoSearchDaemon,
+	  scripts/old/FileInfoSearchService,
+	  scripts/old/FileInfoSearchService.v0, scripts/search.pl.old,
+	  scripts/sys-fs-test.pl: Moved some files
+
+2005-10-27 16:18  brx
+
+	* README, Todo, lib, lib/FileInfo, lib/FileInfo.pm,
+	  lib/FileInfo/DB.pm, lib/FileInfo/Modules, lib/FileInfo/Plugins,
+	  lib/FileInfo/Plugins.pm, lib/FileInfo/Plugins/Extract.pm,
+	  lib/FileInfo/Plugins/MD5.pm, lib/FileInfo/Plugins/MimeType.pm,
+	  lib/FileInfo/Plugins/Nautilus.pm, lib/FileInfo/Query.pm,
+	  lib/FileInfo/README, lib/FileInfo/Search.pm,
+	  lib/FileInfo/Service, lib/FileInfo/Service.pm,
+	  lib/FileInfo/Service/Request.pm,
+	  lib/FileInfo/Service/Response.pm, lib/FileInfo/ServiceClient.pm,
+	  lib/FileInfo/Shell.pm, lib/FileInfo/Utils.pm, lib/VolumeInfo,
+	  lib/VolumeInfo/CD.pm, scripts,
+	  scripts/FileInfo-Keyword-Extract-test.pl,
+	  scripts/FileInfoDBStats.pl, scripts/FileInfoQueryTest,
+	  scripts/FileInfoSearch, scripts/FileInfoSearchClient,
+	  scripts/FileInfoSearchDaemon, scripts/FileInfoSearchService,
+	  scripts/FileInfoSearchService.v0, scripts/FileInfoUpdateDB.pl,
+	  scripts/UI, scripts/UI/GBrowser,
+	  scripts/UI/GBrowser/GBrowser.pl,
+	  scripts/UI/GBrowser/gbrowser.glade.bak,
+	  scripts/UI/GBrowser/gbrowser.gladep.bak, scripts/UI/GFileInfo,
+	  scripts/UI/GFileInfo/GFileInfoAddLabel,
+	  scripts/UI/GFileInfo/GFileInfoSearch,
+	  scripts/UI/GFileInfo/gfileinfo,
+	  scripts/UI/GFileInfo/gfileinfo.gladep,
+	  scripts/UI/GFileInfo/glocate,
+	  scripts/UI/gtk-gladexml-template.pl, scripts/UI/test,
+	  scripts/UI/test/glocate.prj, scripts/UI/test/gnome-mime-query,
+	  scripts/UI/test/gnome-mime-query.c,
+	  scripts/UI/test/gnome-stock-icons-list,
+	  scripts/UI/test/gnome-test.glade,
+	  scripts/UI/test/gnome2-icon-file.pl,
+	  scripts/UI/test/gnome2-mime-test.pl,
+	  scripts/UI/test/gnome2-vfs-test.pl,
+	  scripts/UI/test/gnome2-vfs-theme-test.pl,
+	  scripts/UI/test/gtk-optionmenu-test.pl,
+	  scripts/UI/test/gtk-treeview-list-test.pl,
+	  scripts/UI/test/gtk-treeview-test.pl,
+	  scripts/UI/test/gtk-widget-test.pl, scripts/UI/test/runglade.pl,
+	  scripts/cd-discid.pl, scripts/compile.pl, scripts/db_dump.sh,
+	  scripts/dump_data.pl, scripts/dumpinfo.pl,
+	  scripts/enqueue_all_files.pl, scripts/extractor.pl,
+	  scripts/fileinfo.pl, scripts/fileupdate.pl, scripts/fis.pl,
+	  scripts/fish, scripts/gfish-start, scripts/import_cdrom.pl,
+	  scripts/import_tree_old.pl, scripts/label, scripts/label-list,
+	  scripts/nautilus-metafile-test.pl, scripts/reader.pl,
+	  scripts/register-plugins.sh, scripts/search.pl.old,
+	  scripts/sql_select_dupes.sh, scripts/sqlite-test.pl,
+	  scripts/stylesheet.css, scripts/sys-fs-test.pl,
+	  scripts/test-normalize.pl, t, t/FileInfo.t: Initial loading
+
+2005-10-21 15:16  brx
+
+	* branches, tags, .: Initial repository layout
+

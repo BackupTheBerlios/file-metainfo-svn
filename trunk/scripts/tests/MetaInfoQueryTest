@@ -1,0 +1,27 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use lib $ENV{FILEMETAINFO_LIBDIR};
+use File::MetaInfo::Query::Simple;
+
+my $measure=1;
+my $debug=1;
+my $query=shift || "test";
+
+print "File::MeetaInfo::Query test - querying $query\n" if $debug;
+
+my $fmiq=new File::MetaInfo::Query::Simple( 
+	$query,
+	debug => $debug,
+	measure => $measure
+	) || die "Fatal: could not create search.\n";
+
+print "File::MetaInfo::Query - query ready to run.\n" if $debug;
+my @ids=$fmiq->run();
+print "File::MetaInfo::Query - returned: @ids\n" if $debug;
+foreach my $id (keys %{$fmiq->{results}}){
+	print "File::MetaInfo::Query - result: $fmiq->{results}->{$id}->{fullpath}\n";
+}
+
+$fmiq->close();

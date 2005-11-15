@@ -23,12 +23,13 @@ BEGIN {
 
 #------
 
+our $NAME=__PACKAGE__;
 our $Moved='M';
 our $Changed='C';
 our $UserLabel='File::MetaInfo::User.labels';
 our $UserRate='File::MetaInfo::User.rate';
+our $UserVolumeID=$NAME . "::User.volumeid";
 my $iconSize=48;
-our $NAME=__PACKAGE__;
 
 sub dmsg{ return "*** DEBUG [$NAME]: @_" }
 
@@ -42,7 +43,7 @@ sub new{
 	$self{debug}=0;
 	$self{volumeid}='0';
 
-	$self{infokeys}=[ 'id', 'filename', 'fullpath', 'title', 'summary', 'mimetype'];
+	$self{infokeys}=[ 'filename', 'fullpath', 'title', 'summary', 'mimetype'];
 	
 	@self{keys %options} = values %options;
 	$self{debug}=0 if ($self{debug} lt 0);
@@ -72,7 +73,7 @@ sub new{
 		$self{id}=$self{fileInfoDB}->get_file_id($self{fullpath});
 		my $self = bless \%self, $class;
 		$self->update_keywords();
-		$self->add_keyword('volumeid',[ $self{volumeid} ]);
+		$self->add_keyword($UserVolumeID,$self{volumeid});
 		#add_keyword(\%self,'filepath',[ $self{filepath}]);
 		$self{fresh}=1;
 	}
@@ -389,31 +390,36 @@ sub print_values{
 	my $sep1=shift || "=";
 	my $sep2=shift || "\n";
 	my $sep3=shift || ",";
-	my $hilite=shift || undef;
+	my $hilite=shift || 0;
 	my $OUT=shift || \*STDOUT;
 	#my $h=$self->get_values_hashref();
 	foreach my $k (sort(keys %{$self->{keywords}})){
 		my $pline="$k$sep1" . join ($sep3, @{$self->{keywords}->{$k}}) . "$sep2";
+		$pline=~s/$NAME\:\://;
 		if ($hilite){
-			$pline=~s/$hilite/[01m$hilite[0;0m/;	
+			foreach my $h (@{$self->{matching}}){
+				$pline=~s/$h/[01m$h[0;0m/;	
+			}
 		}
 		print $OUT $pline;
 	}
 }
 
-sub sprintf_matching_keywords{
+sub sprintf_matching{
 	my $self=shift;
+	my $keyword=lc shift || undef;
 	my $value=lc shift || undef;
 	my $sep1=shift || "=";
 	my $sep2=shift || ",";
 	my @pline;
-	carp "NOTE: Slow method has to be rewritten using data from the query" if ($self->{debug});
-	return undef unless $value;
+
+	return undef unless ($keyword or $value);
 	foreach my $k (keys %{$self->{keywords}}){
 		#warn dmsg . "keyword: @{$self->{keywords}->{$k}}";
 		foreach my $l (@{$self->{keywords}->{$k}}){
-			if ($l=~/$value/ || $k=~/$value/){
+			if ($l=~/$value/ && $k=~/$keyword/){
 				$k=~s/$NAME\:\://;
+				#.*$keyword/[01m$keyword[0;0m/;
 				$l=~s/$value/[01m$value[0;0m/;	
 				push @pline,"$k$sep1$l";
 			}

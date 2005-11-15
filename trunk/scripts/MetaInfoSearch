@@ -2,24 +2,29 @@
 #
 
 use strict;
-use lib $ENV{FILEMETAINFO_LIBDIR};
-use File::MetaInfo;
-use File::MetaInfo::DB;
 use Data::Dumper;
 use Getopt::Long;
 
+use lib $ENV{FILEMETAINFO_LIBDIR};
+use File::MetaInfo;
+use File::MetaInfo::DB;
+use File::MetaInfo::Utils;
+use File::MetaInfo::Query::Simple;
+
 our $NAME="MetaInfoSearch";
-our $VERSION="0.1";
+our $VERSION="0.2";
 our $USAGE=
-"Usage: $NAME [options] KEYWORDS
-Search your File::MetaInfo DB for files matching the KEYWORD.
+"Usage: $NAME [options] [KEYWORD:]LABEL
+Search your File::MetaInfo DB for files matching the LABEL. If KEYWORD is 
+specified the search is done only for the specified one. You can specify an 
+asterisk '*' to search in all the keywords. Default is to search in 
+'$File::MetaInfo::UserLabel'.
 Your DB is located under \'$File::MetaInfo::DB::defaultlocation\'.
 
 Options:
   -b, --brief 	  Show only the full path (as locate do)
   -l, --long 	  Show also other informations about the files found
   -m, --matching  In 'brief' mode print matching keywords
-  -k, --keywords  Search the term in all the keywrod. Default searches in users keywords only.
 
   -t, --times 	Show times
   -d, --debug
@@ -32,7 +37,6 @@ my $debug=0;
 my $brief=0;
 my $long=1;
 my $match=0;
-my $keywords=0;
 my $gnome;
 my @nokeys;
 my $help;
@@ -46,7 +50,6 @@ GetOptions(
 	'gnome-vfs' => \$gnome,
 	matching => \$match,
 	help => \$help,
-	keywords=> \$keywords
 );
 
 
@@ -58,46 +61,38 @@ if ($help || !defined($value)){
 }
 my $fdb=new File::MetaInfo::DB( debug => $debug) || die "Could not open DB\n";
 
-my $t0=Time::HiRes::time if ($m);
+my $timer=File::MetaInfo::Utils::start_timer();
 
-my $arrayref;
+my $fmiq=new File::MetaInfo::Query::Simple(
+	$value,
+	debug => $debug,
+	measure => $m
+) || die "Fatal: could not instantiate the query object";
 
-if ($keywords){
-	$arrayref=$fdb->search_full($value);
-}
-else {
-	my $kv={
-		keyword=> $File::MetaInfo::UserLabel,
-		value => "$value"
-	};
-	$arrayref=$fdb->search_keyval($kv);
-}
+$fmiq->run();
 
-my $tf=Time::HiRes::time if ($m);
-warn "TIMES: search() elapsed in " . ($tf - $t0) . " seconds\n" if ($m);
-print Dumper($arrayref) if $debug;
-$t0=Time::HiRes::time if ($m);
-foreach (@$arrayref){
-	print "DEBUG: $$_[0]\n" if $debug;
-	#my $tn0=Time::HiRes::time if ($m);
-	my $fi=new File::MetaInfo(
-		 $$_[0],
-	 	 fileInfoDB => $fdb,
-	 	 debug => $debug
-	) || die "Could not instantiate File::MetaInfo: $@\n";
-	#my $tnf=Time::HiRes::time if ($m);
-	#warn "TIMES: File::MetaInfo::new() elapsed in " . ($tnf - $tn0) . " seconds\n" if ($m);
+warn "TIMES: search() elapsed in " . File::MetaInfo::Utils::stop_timer($timer) . " seconds\n" if ($m);
+print Dumper($fmiq) if $debug;
+
+$timer=File::MetaInfo::Utils::start_timer();
+
+#$fmiq->matching_keyword;
+foreach my $id (keys %{$fmiq->{results}}){
+
+	my $fi=$fmiq->{results}->{$id};
+
 	if ($brief){
-		print $fi->{fullpath};
+		print "$fi->{fullpath}";
 		if ($match){
-			print " [" . $fi->sprintf_matching_keywords($value) . "]";
+			print " [". $fi->sprintf_matching($fmiq->{keyword},$fmiq->{value}) . "]";
 		}
 		print "\n";
 	}
 	else{
+		print "#####################\n";
 	 	$fi->print_info(": ");
 	 	print "Keywords:\n\t";
-	 	$fi->print_values(":\t","\n\t",",",$value);
+	 	$fi->print_values(":\t","\n\t",",",1);
 		if ($gnome){
 			print "VFS Info:\n";
 			$fi->print_gnome2_info();
@@ -108,6 +103,5 @@ foreach (@$arrayref){
 	#$fi->close();
 }
 
-$tf=Time::HiRes::time if ($m);
-warn "TIMES: total rendering time: " . ($tf - $t0) . " seconds\n" if ($m);
-$fdb->close();
+warn "TIMES: total rendering time: " . File::MetaInfo::Utils::stop_timer($timer) . " seconds\n" if ($m);
+$fmiq->close();

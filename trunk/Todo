@@ -3,6 +3,7 @@ TODO list for Perl module FileInfo
 - Nothing yet
 
    * PRIORITY - DESCRIPTION
+   * L - Transform the VolumeInfo into a keyword Extractor plugin.
    * H - Documentation
    * M - Make it a perl bundle.
    * L - WebDAV UI

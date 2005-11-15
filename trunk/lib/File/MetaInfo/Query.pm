@@ -1,146 +1,57 @@
 #!/usr/bin/perl
 
 use strict;
-package FileInfo::Query;
+package File::MetaInfo::Query;
 
-my $myname=__PACKAGE__;
+our $NAME=__PACKAGE__;
+our $VERSION="0.2";
+our $err;
+
+BEGIN {
+	use Exporter();
+	use vars qw($VERSION $NAME @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $err);
+	$VERSION 	= "0.1";
+	@ISA 		= qw (Exporter);
+	@EXPORT		= qw ();
+	@EXPORT_OK 	= qw ();
+	%EXPORT_TAGS 	= ();
+}
 
 
 use Carp;
 use Data::Dumper;
-use FileInfo::DB;
-use FileInfo;
-use Switch;
-use FileInfo::Utils qw( start_timer stop_timer );
+use File::MetaInfo::DB;
+use File::MetaInfo;
+use File::MetaInfo::Utils qw( start_timer stop_timer );
 
-our $col_keyword='KEYWORDS.KEYWORD';
-our $col_value='KEYWORDS.VALUE';
-our $col_filename='FILE.FILENAME';
-our $col_filepath='FILE.FILEPATH';
-our @queryColumns=( $col_keyword, $col_value, $col_filename, $col_filepath );
-my $default_keyword=$FileInfo::UserLabel;
-our $equal='equal';
-our $contain='contain';
-our $start_with='start_with';
-our $end_with='end_with';
-
-# this create a new serarch
-# parameters are 'args' and 'options'
-# args is an array reference that describes the query
-# Query object is formed like this:
-# 	keywords  := <keyword>*
-# 	condition := equal | contain | start_with | end_with
-# 	values     := <value>*
-#
-
-sub dmsg{ return "*** DEBUG [$myname]: @_ " }
-
-
-sub new{
-	my $this=shift;
-        my $class=ref($this) || $this;
-        my %self;
-        my %arguments=@_;
-
-	my $timer=FileInfo::Utils::start_timer();
-
-        $self{debug}=0;
-	# Default value
-	$self{values}=undef;
-
-        @self{keys %arguments} = values %arguments;
-	$self{keywords}=[ 
-		$default_keyword
-	] unless defined(${$self{keywords}}[0]);
-	$self{condition}=$equal unless defined($self{condition});
-	
-	warn dmsg Dumper(\%self) if $self{debug};
-
-	return undef unless $self{values};
-
-
-	if (!defined($self{fileInfoDB})){
-    		warn dmsg "creating a new db connection" if $self{debug};
-		$self{fileInfoDB}=new FileInfo::DB( debug => $self{debug});
-		$self{fileInfoDB_is_mine}=1;
-		return undef unless $self{fileInfoDB};
-    	}
-
-	$self{query}=_parse('DISTINCT(FILE.ROWID)',$self{condition},$self{keywords},$self{values},$self{debug});
-	return undef unless $self{query};
-
-	$self{views};
-	$self{viewids}=0;
-
-	warn dmsg "Object generated in " . FileInfo::Utils::stop_timer($timer) if $self{measure};
-
-	my $self = bless \%self, $class;
-	
-	return $self;
-}
+sub dmsg{ return "*** DEBUG [$NAME]: @_ " }
 
 sub run{
 	my $self=shift;
 
-	#my ($ret,$name)=$self->create_view($self->{query});
-	#return undef unless $ret;
-	#warn "DEBUG: view=" . Dumper($self->{views}) . "ret=$ret name=$name\n" if $self->{debug};
-	my $timer=FileInfo::Utils::start_timer();
-	my @ret;
-	my $aref=$self->{fileInfoDB}->exec_sql($self->{query});
+	my $timer=File::MetaInfo::Utils::start_timer();
+	my $aref=$self->{MetaInfoDB}->search_custom($self->{clause});
+	warn dmsg "Query run in " . File::MetaInfo::Utils::stop_timer($timer) . "seconds" if $self->{measure};
+	$timer=File::MetaInfo::Utils::start_timer();
+
+	$self->{ids}=$aref;
+
 	return undef unless $aref;
+
+	my @ret;
 	foreach my $id (@$aref){
-		my $fi=new FileInfo(
+		my $fi=new File::MetaInfo(
 			@$id[0],
-			fileInfoDB=>$self->{fileInfoDB}
+			fileInfoDB=>$self->{MetaInfoDB}
 		);
 		return undef unless $fi;
 		$self->{results}->{$fi->{id}}=$fi;
 		push @ret,$fi->{id};
 	}
 	#return undef unless ($ret ne '0E0');
-	warn dmsg "Result generated in " . FileInfo::Utils::stop_timer($timer) if $self->{measure};
+	warn dmsg "Result generated in " . File::MetaInfo::Utils::stop_timer($timer) if $self->{measure};
 	return @ret;
-}
-
-
-# The SQL query is generated as:
-# 	query := ( clause ) | [( clause ) AND ( clause )]*
-# 	clause := keyword condition value
-#
-sub _parse($){
-	my $what=shift;
-	my $condition=shift;
-	my $keywords=shift;
-	my $values=shift;
-	my $debug=shift || undef;
-	my $prefix=shift || "SELECT $what FROM FILE,KEYWORDS WHERE (FILE.ROWID=KEYWORDS.FILE_ID AND ";
-	my $query;
-	my $i=0;
-	my @clauses;
-	warn dmsg "parse - Enter" if $debug;
-	
-	foreach my $keyw (@{$keywords}){
-		my $keyclause="KEYWORD = '$keyw'";
-		foreach my $val (@{$values}){
-			my $sql;
-			warn dmsg "keyword=$keyw value=$val clause=$condition" if $debug;
-			if ($condition eq $equal){ $sql="( $keyclause AND VALUE='$val' )"; }
-			elsif ($condition eq $start_with){ $sql="( $keyclause AND VALUE LIKE '$val%' )"; }
-			elsif ($condition eq $end_with){ $sql="( $keyclause AND VALUE LIKE '%$val' )"; }
-			elsif ($condition eq $contain){ $sql="( $keyclause AND VALUE LIKE '%$val%')"; }
-			warn dmsg "clause=$sql" if $debug;
-			push @clauses,$sql;
-		}
-	}
-
-	$query = $prefix . join(' AND ',@clauses) . ')';
-	warn dmsg "query=$query" if $debug;
-
-	warn dmsg "parse - Exit" if $debug;
-	return $query;
-}
-
+};
 
 sub create_view{
 	my $self=shift;
@@ -178,3 +89,4 @@ sub close{
 	}
 }
 
+1;
