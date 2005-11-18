@@ -25,7 +25,7 @@ sub new{
 	$self{cmd}="/usr/bin/extract";
 	$self{debug}=0;
 	$self{filename}=$filename;
-	$self{cfg_ignorekeywords}=qq{filename};
+	$self{cfg_ignorekeywords}=[ "filename" ];
 	if ((! -r $filename) || (! -s $filename) ){
 		$@='File read error';
 		return undef;
@@ -47,7 +47,14 @@ sub extract{
 		chomp $l;
 		my ($key,$val)=split(/ - /,$l);
 		my $oldkey=$key;
-		next if ($self->{cfg_ignorekeywords} =~ /$key/);
+		my $found=0;
+		foreach my $i (@{$self->{cfg_ignorekeywords}}){
+			if ($key =~ /$i/){
+				$found=1;
+				next;
+			}
+		}
+		next if $found;
 		$key=$packname . '.' . $key;
 		if (defined($val) && ($val !~ /^$/) && defined($key) && ($self->{exclude} !~ /$key/)){
 			if ($oldkey =~ /date/){

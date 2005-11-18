@@ -1,0 +1,25 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use lib $ENV{FILEMETAINFO_LIBDIR};
+
+use VolumeInfo::CD;
+
+my $basedir=shift || "/";
+
+print "basedir: $basedir\n";
+my $cddev=VolumeInfo::CD::device($basedir);
+print "dev: $cddev\n";
+my $mpoint=VolumeInfo::CD::mount_point($cddev);
+print "mpoint: $mpoint\n";
+my $mounted=VolumeInfo::CD::is_mounted($cddev);
+print "mounted: $mounted\n";
+if (!$mounted){
+	`mount $mpoint`;
+	$mounted=VolumeInfo::CD::is_mounted($cddev);
+	die "Fatal: Could not mount device $cddev" unless ($mounted eq 1);
+}
+my ($id,$last,$lenght,$toc)=VolumeInfo::CD::get_discids($cddev);
+my $volid="$id-$last-$lenght";
+print "volid: $volid\n";
