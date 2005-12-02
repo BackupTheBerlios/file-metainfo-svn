@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #
 
-package VolumeInfo::CD;
+package File::MetaInfo::Volume::CD;
 
 use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $debug);

@@ -29,6 +29,7 @@ our $Changed='C';
 our $UserLabel='File::MetaInfo::User.labels';
 our $UserRate='File::MetaInfo::User.rate';
 our $UserVolumeID=$NAME . "::User.volumeid";
+our $LastUpdate='File::MetaInfo.lastupdate';
 my $iconSize=48;
 
 sub dmsg{ return "*** DEBUG [$NAME]: @_" }
@@ -82,7 +83,7 @@ sub new{
 	@self{keys %$hr} = values %$hr;
 	$hr=$self{fileInfoDB}->get_values_hashref($self{id});
 	$self{keywords} = $hr;
-	$self{keywords_lastrefresh}=time;
+	$self->{keywords_lastrefresh}=time;
 	#warn "DEBUG: hr=" . Dumper($hr);
 	#@self{keys %$hr} = values %$hr;
 	$self{fullpath}=join('/',$self{filepath},$self{filename});
@@ -192,6 +193,9 @@ sub update_keywords{
 	
 	my $kv_ref=$self->extract_keywords();
 	my $ret=$self->{fileInfoDB}->update_keywords($self->{id},$kv_ref); 
+	if ($ret){
+		$self->add_keyword($LastUpdate,time);
+	}
 	return $ret;
 }
 

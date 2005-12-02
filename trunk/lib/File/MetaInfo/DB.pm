@@ -1,4 +1,8 @@
 #!/usr/bin/perl
+#
+# TODO:
+# 	21/nov/2005 - RFE_DB_FL01: Add a way to list most recently added files
+# 	 	      RFE_DB_FL02: Add a way to list most recentry changed files
 
 package File::MetaInfo::DB;
 
@@ -7,6 +11,9 @@ use warnings;
 use DBI;
 use File::Basename;
 use Carp;
+
+my $NAME=__PACKAGE__;
+our $err;
 
 our $AutoLabel;
 our $UserLabel;
@@ -47,6 +54,9 @@ my $sqlPluginID=qq{SELECT ROWID FROM PLUGINS WHERE NAME=?};
 my $sqlAllPluginIDs=qq{SELECT ROWID FROM PLUGINS};
 my $sqlListPlugins=qq{SELECT NAME FROM PLUGINS};
 
+
+sub dmsg{ return "*** DEBUG [$NAME]: @_ " }
+sub errmsg { return "ERROR [$NAME}: @_ "};
 
 # 91: file must be an absolute pathname";
 # 92: file not present into db";
@@ -145,6 +155,19 @@ sub create_db{
 			)
 		});
 
+	$dbh->do(qq{
+		CREATE TABLE LOCATIONS (
+			LOCATION VARCHAR,
+			VOLUME CHAR(30),
+			SCHEMA CHAR(10),
+			HOST CHAR(100),
+			LABEL VARCHAR(100),
+			LASTUPDATE TIMESTAMP,
+			DESCRIPTION TEXT,
+			PRIMARY KEY (LOCATION, VOLUME)
+			)
+		});
+
     $dbh->do(qq{
     	CREATE TABLE PLUGINS(
     		NAME VARCHAR (50) NOT NULL,
@@ -159,13 +182,44 @@ sub add_volume($$$){
 	my $volid=shift;
 	my $volname=shift || 'none';
 
-	warn "DEBUG: File::MetaInfo::DB::add_volume($volid,$volname" if $self->{debug};
+	warn dmsg "add_volume($volid,$volname)" if $self->{debug};
 
 	my $sqlAddVolume=qq{ INSERT INTO VOLUMES (VOLUME,LABEL) VALUES (?,?) };
 
 	my $rc=$self->{dbh}->do($sqlAddVolume,undef,$volid,$volname);
 	$rc or carp "ERROR: DBI (".$self->{dbh}->err."/". $self->{dbh}->state.") $DBI::errstr" if ($self->{debug});
 	return $rc;
+}
+
+# add_location: addedd 22/11/05
+sub add_location{
+	my $self=shift;
+	my $location_obj=shift;
+
+	warn dmsg "add_location($location_obj)" if $self->{debug};
+
+	if (!defined($location_obj)){
+		$err="ERROR - Usage: $NAME->add_location(File::MetaInfo::Location)";
+		return undef;
+	}
+	my $columns;
+	my $values;
+	foreach my $var (keys %{$location_obj}){
+		$columns=join(',',$columns,uc $var);
+		$values=join(',',$values,"'" . $location_obj->{$var} . "'");
+	}
+
+	my $sqlAddLocation=qq{ INSERT INTO LOCATIONS ($columns) VALUES ($values) };
+	warn dmsg "add_location: sql=$sqlAddLocation" if $self->{debug};
+	
+	my $rc=$self->{dbh}->do($sqlAddLocation);
+
+	if  (!defined($rc)){
+		$err="DBI (".$self->{dbh}->err."/". $self->{dbh}->state.") $DBI::errstr";
+		carp errmsg($err) if ($self->{debug});
+	}
+
+	return $rc
 }
 
 	
@@ -682,6 +736,10 @@ sub last_err{
 	my $self=shift;
 
 	return $self->{dbh}->err, $self->{dbh}->errstr;
+}
+
+sub _hashref_to_sql{
+	my $hashref=shift;
 }
 
 #sub _add{

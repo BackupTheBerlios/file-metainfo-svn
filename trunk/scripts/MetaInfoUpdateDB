@@ -1,4 +1,11 @@
 #!/usr/bin/perl 
+#
+#
+# TODO:
+# 	21/nov/2005 - If a location is not specified on the command line, this 
+# 		      command should run in "daemon" mode: look if there are newly
+# 		      added location by MetaInfoAddLocation command and index them,
+# 		      update the current indexes.
 
 use strict;
 use lib $ENV{FILEMETAINFO_LIBDIR};

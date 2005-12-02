@@ -1,0 +1,88 @@
+#!/usr/bin/perl
+
+use strict;
+package PACKAGENAME;
+
+
+=head1 NAME
+
+...
+
+=head1 SYNOPSIS
+
+ use PACKAGENAME;
+ my $object = new PACKAGENAME(...);
+
+=head1 DESCRIPTION
+
+..description..
+
+=cut
+
+our $NAME=__PACKAGE__;
+our $VERSION="0.2";
+our $err;
+
+BEGIN {
+	use Exporter();
+	use vars qw($VERSION $NAME @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $err);
+	$VERSION 	= "0.1";
+	@ISA 		= qw (Exporter);
+	@EXPORT		= qw ();
+	@EXPORT_OK 	= qw ();
+	%EXPORT_TAGS 	= ();
+}
+
+
+use Carp;
+use File::MetaInfo::DB;
+use File::MetaInfo;
+
+sub dmsg{ return "*** DEBUG [$NAME]: @_ " };
+sub errmsg{ return "ERROR [$NAME]: @_ " };
+
+=head1 PUBLIC METHODS
+
+=head2 new
+
+=over 4
+
+=item * 
+
+=item * 
+
+=back
+
+=cut
+
+sub new {
+	my $this=shift;
+	my $class=ref($this) || $this;
+	my %self;
+	my %options=@_;
+
+	$self{debug}=0;
+	
+	@self{keys %options} = values %options;
+	$self{debug}=0 if ($self{debug} lt 0);
+
+	if ($self{measure}){
+		use File::MetaInfo::Utils qw( start_timer stop_timer );
+	}
+	
+	if ($self{debug}){
+		use Data::Dumper;
+	}
+
+	#... code here...#
+	
+
+
+
+	#................#
+	
+	my $self = bless \%self, $class;
+        return $self;
+}
+
+1;
