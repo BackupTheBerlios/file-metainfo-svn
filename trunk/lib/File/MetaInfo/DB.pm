@@ -37,6 +37,8 @@ my $sqlGetKeywordsForFileID=qq{ SELECT KEYWORD FROM KEYWORDS WHERE FILE_ID=? };
 my $sqlGetKeywordsAndValues=qq{ SELECT KEYWORD,VALUE FROM KEYWORDS WHERE FILE_ID=? };
 my $sqlGetKeywordsAndValuesID=qq{ SELECT FILE_ID,KEYWORD,VALUE FROM KEYWORDS WHERE FILE_ID=? };
 my $sqlInsertFile=qq{ INSERT OR REPLACE INTO FILE (FILENAME, FILEPATH, MTIME, STATUS, VOLUME) VALUES (?,?,?,0,?) };
+my $sqlRemoveFile=qq{ DELETE FROM FILE WHERE ROWID=? };
+my $sqlRemoveKeywords=qq{ DELETE FROM KEYWORDS WHERE FILE_ID=? };
 #my $sqlUpdateFile=qq{ UPDATE FILE SET FILENAME=?, FILEPATH=?, MTIME=?, STATUS=NULL WHERE ROWID=? };
 my $sqlResetFileStatus=qq{ UPDATE FILE SET MTIME=?,STATUS='0' WHERE ROWID=? };
 #my $sqlInsertLabel=qq{ INSERT INTO LABELS (FILE_ID, LABEL, TYPE) VALUES (?,?,?) };
@@ -258,6 +260,36 @@ sub add_files($$){
 
 	warn "TIMES: $ret " . (time - $time0) . "\n" if ($self->{measure});
 	return $ret;
+}
+
+sub remove_file($$){
+	my $self=shift;
+	my $id=shift;
+
+	my @fileidlist=($id);
+	return $self->remove_files(\@fileidlist);
+}
+
+
+sub remove_files($$){
+	my $self=shift;
+	my $fileidlist=shift;
+	
+	my $ret1=0;
+	my $ret2=0;
+
+	my $ac=$self->{dbh}->begin_work();
+	my $isth1=$self->{dbh}->prepare($sqlRemoveFile) || carp_dbh_error($self->{dbh});
+	my $isth2=$self->{dbh}->prepare($sqlRemoveKeywords) || carp_dbh_error($self->{dbh});
+	for my $id (@$fileidlist){
+		dmsg "Removing fileid=$id from tables" if ($self->{debug});
+		$ret1+=$isth1->execute($id) || carp_dbh_error($self->{dbh});
+		$ret2+=$isth2->execute($id) || carp_dbh_error($self->{dbh});
+	}
+	if (defined($ac) and ($ac eq 1)){
+		$self->{dbh}->commit() || carp_dbh_error($self->{dbh});
+	}
+	return ($ret1,$ret2);
 }
 
 sub enqueue_files($$){

@@ -83,7 +83,7 @@ sub new{
 	@self{keys %$hr} = values %$hr;
 	$hr=$self{fileInfoDB}->get_values_hashref($self{id});
 	$self{keywords} = $hr;
-	$self->{keywords_lastrefresh}=time;
+	$self{keywords_lastrefresh}=time;
 	#warn "DEBUG: hr=" . Dumper($hr);
 	#@self{keys %$hr} = values %$hr;
 	$self{fullpath}=join('/',$self{filepath},$self{filename});
@@ -221,6 +221,11 @@ sub update{
 	if ($ret){
 		return $self->reset_status();
 	}
+}
+
+sub remove{
+	my $self=shift;
+	return $self->{fileInfoDB}->remove_file($self->{id});
 }
 
 sub describe_plugins{
