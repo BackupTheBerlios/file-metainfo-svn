@@ -71,16 +71,16 @@ foreach $basedir (@ARGV){
 
 	if ($cdrom){
 		$volname || die "Fatal: You should specify a volume name";
-		use VolumeInfo::CD;
-		$cddev=VolumeInfo::CD::device($basedir);
-		$mpoint=VolumeInfo::CD::mount_point($cddev);
-		$mounted=VolumeInfo::CD::is_mounted($cddev);
+		use File::MetaInfo::Volume::CD;
+		$cddev=File::MetaInfo::Volume::CD::device($basedir);
+		$mpoint=File::MetaInfo::Volume::CD::mount_point($cddev);
+		$mounted=File::MetaInfo::Volume::CD::is_mounted($cddev);
 		if (!$mounted){
 			`mount $mpoint`;
-			$mounted=VolumeInfo::CD::is_mounted($cddev);
+			$mounted=File::MetaInfo::Volume::CD::is_mounted($cddev);
 			die "Fatal: Could not mount device $cddev" unless ($mounted eq 1);
 		}
-		my ($id,$last,$lenght,$toc)=VolumeInfo::CD::get_discids($cddev);
+		my ($id,$last,$lenght,$toc)=File::MetaInfo::Volume::CD::get_discids($cddev);
 		$volid="$id-$last-$lenght";
 		$fdb->add_volume($volid,$volname) || warn "Warning: Could not add volume $@";
 	}
