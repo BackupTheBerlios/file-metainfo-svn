@@ -13,7 +13,7 @@ use Cwd qw(abs_path);
 use Getopt::Long;
 use Carp;
 use File::Basename;
-use File::Find;
+use File::FTS;
 use File::MetaInfo::DB;
 use File::MetaInfo;
 use Time::HiRes;
@@ -95,7 +95,10 @@ foreach $basedir (@ARGV){
 	$basedir=abs_path($basedir);
 	warn "DEBUG: basedir=$basedir\n" if $debug;
 	print "\nImporting $basedir\n";
-	find(\&add_it, $basedir, $volid);
+	my $fts=new File::FTS($ARGV[0]);
+	while (my $file = $fts->Dive){
+		add_it($file);
+	}
 	$fdb->commit();
 }
 print "\nProcessed $i files. ";
@@ -112,8 +115,8 @@ $fdb->close();
 #############
 #
 sub add_it{
-	warn "DEBUG: main::add_it::filename=$File::Find::name - @_\n" if $debug;
-	my $fn=$File::Find::name;
+	my $fn=shift;
+	warn "DEBUG: main::add_it::filename=$fn - @_\n" if $debug;
 	print "$fn->" if $verbose;
 	if (defined($excl{$fn}) || (defined($exp) and $fn =~ /$exp/) ){
 		print "S" if (!defined($quiet));

@@ -47,6 +47,8 @@ my $expanded=0;
 my $keywordslist=$gladexml->get_widget('keywordslist');
 
 my $labelentry=$labelcomboentry->get_child();
+my $labelentry_tooltip=new Gtk2::Tooltips;
+$labelentry_tooltip->set_tip($labelentry,"Add your tags, comma separated");
 
 my $liststore=Gtk2::SimpleList->new_from_treeview (
 		$keywordslist,
