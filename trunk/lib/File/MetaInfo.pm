@@ -144,7 +144,7 @@ sub add_keyword($$$){
 	my $value=shift;
 	push @{$self->{keywords}->{$keyword}},$value;
 	warn Dumper($self->{keywords}) if ($self->{debug});
-	return $self->{fileInfoDB}->update_keywords($self->{id},$self->{keywords});
+	return $self->{fileInfoDB}->update_keywords($self->{id},$self->{keywords},$self->{normalize});
 }
 
 sub replace_keyword{
@@ -156,7 +156,7 @@ sub replace_keyword{
 	warn dmsg "values=" . Dumper(\@values) if $self->{debug};
 	$self->{keywords}->{$keyword}=\@values;
 	warn Dumper($self->{keywords}) if ($self->{debug});
-	return $self->{fileInfoDB}->update_keywords($self->{id},$self->{keywords});
+	return $self->{fileInfoDB}->update_keywords($self->{id},$self->{keywords},$self->{normalize});
 }
 
 sub extract_keywords{
@@ -192,7 +192,7 @@ sub update_keywords{
 	my $self=shift;
 	
 	my $kv_ref=$self->extract_keywords();
-	my $ret=$self->{fileInfoDB}->update_keywords($self->{id},$kv_ref); 
+	my $ret=$self->{fileInfoDB}->update_keywords($self->{id},$kv_ref,$self->{normalize}); 
 	if ($ret){
 		$self->add_keyword($LastUpdate,time);
 	}

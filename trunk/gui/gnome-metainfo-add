@@ -68,8 +68,9 @@ die "You must specify a filename" unless $fn;
 my $fdb=new File::MetaInfo::DB( debug => $debug ) || die "Could not open db";
 my $fi=new File::MetaInfo(
                 $fn,
-		fileInfoDB=>$fdb,
-                debug=>$debug
+				fileInfoDB=>$fdb,
+                debug=>$debug,
+				normalize=>1
         );
 
 die "Error creating File::MetaInfo object for \'$fn\'" unless $fi;
@@ -112,7 +113,6 @@ sub process_label{
 		warn dmsg "Label: " . $label if $debug;
 		my @labels=split(',',$label);
 		foreach my $l (@labels){
-			File::MetaInfo::Utils::normalize_string(\$l);
 			my $ret=$fi->add_keyword($File::MetaInfo::UserLabel,$l);
 			warn dmsg "Label $l addedd with ret ($ret)" if $debug;
 		}

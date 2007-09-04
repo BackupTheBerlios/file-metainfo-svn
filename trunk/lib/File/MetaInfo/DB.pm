@@ -461,6 +461,7 @@ sub update_keywords{
 
 	my $fileID=shift;
 	my $hash=shift;
+	my $opt_normalize=shift;
 	my $ret;
 	
 	if (!defined($fileID)){
@@ -472,7 +473,9 @@ sub update_keywords{
 	my $sth = $self->{dbh}->prepare($sqlInsertKeywords);
 	#warn "DEBUG: File::MetaInfo::DB kv_hash=" . Dumper($hash);
 	foreach my $k (keys(%$hash)){
+		File::MetaInfo::Utils::normalize_string(\$k) if defined($opt_normalize);
 		foreach my $v (@{$hash->{$k}}){
+			File::MetaInfo::Utils::normalize_string(\$v) if defined($opt_normalize);
 			$ret=$sth->execute($fileID,$k,$v);
   			warn "fileID=$fileID key=$k val=$v ret=$ret\n" if ($self->{debug});
 		}

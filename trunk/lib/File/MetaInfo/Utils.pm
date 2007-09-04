@@ -37,6 +37,11 @@ sub normalize_string{
 	#	${$string} =~ s/^[a-z]/$C/;
 	#}
 	${$string} =~ tr/A-Z/a-z/;
+	# Remove <tags>
+	# ${$string} =~ s/<(.[:alpha:]*)>/&lt\;($1)&gt\;/g;
+	# Substitute remaining < or >
+	${$string} =~ s/</&lt\;/g;
+	${$string} =~ s/>/&gt\;/g;
 	warn dmsg "Result string: \[${$string}\]" if ($debug);
 }
 

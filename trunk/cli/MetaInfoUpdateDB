@@ -94,10 +94,16 @@ foreach $basedir (@ARGV){
 
 	$basedir=abs_path($basedir);
 	warn "DEBUG: basedir=$basedir\n" if $debug;
-	print "\nImporting $basedir\n";
-	my $fts=new File::FTS($ARGV[0]);
-	while (my $file = $fts->Dive){
-		add_it($file);
+	if ( -d $basedir ){
+		print "\nImporting directory $basedir\n";
+		my $fts=new File::FTS($ARGV[0]);
+		while (my $file = $fts->Dive){
+			add_it($file);
+		}
+	} 
+	elsif ( -f $basedir ){
+		print "\nImporting file $basedir\n";
+		add_it($basedir);
 	}
 	$fdb->commit();
 }
@@ -131,7 +137,8 @@ sub add_it{
 			fileInfoDB=>$fdb,
 			volumeid=>$volid,
 			excludeKeywords=>"File::MetaInfo::Plugins::Extract.filename",
-			debug=>($debug-1)
+			debug=>($debug-1),
+			normalize=>1
 			) || die;
 	print "." if (!defined($quiet));
 	if($finfo->{fresh}){
